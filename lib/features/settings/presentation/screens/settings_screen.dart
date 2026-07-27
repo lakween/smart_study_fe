@@ -9,8 +9,8 @@ import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
 
-final darkModeProvider = StateProvider<bool>((ref) => false);
 final fontSizeProvider = StateProvider<double>((ref) => 14.0);
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -126,7 +126,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const _SectionTitle('Appearance'),
           SwitchListTile(
             value: isDark,
-            onChanged: (v) => ref.read(darkModeProvider.notifier).state = v,
+            onChanged: (v) =>
+                ref.read(darkModeProvider.notifier).setDarkMode(v),
             secondary: const Icon(Icons.dark_mode_outlined),
             title: const Text('Dark Mode'),
             activeThumbColor: AppColors.primary,

@@ -1,4 +1,4 @@
 interface:
   display_name: "Build Smart Study Mobile App"
-  short_description: "Build and maintain the Smart Study Flutter app"
-  default_prompt: "Use $build-smart-study-mobile-app to implement a feature in the Smart Study Flutter app."
+  short_description: "Build Smart Study Flutter and backend features"
+  default_prompt: "Use $build-smart-study-mobile-app to implement and validate a Smart Study frontend or backend feature."

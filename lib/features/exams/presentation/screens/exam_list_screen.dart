@@ -17,8 +17,11 @@ class ExamListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(examProvider);
     final userId = ref.watch(authProvider).user?.id;
-    final myExams = state.exams.where((e) => e.organizerId == userId).toList();
-    final invited = state.exams.where((e) => e.organizerId != userId).toList();
+    final myExams = state.exams
+        .where((e) => state.ownedExamIds.contains(e.id) || e.organizerId == userId)
+        .toList();
+    final myExamIds = myExams.map((e) => e.id).toSet();
+    final invited = state.exams.where((e) => !myExamIds.contains(e.id)).toList();
 
     return DefaultTabController(
       length: 2,

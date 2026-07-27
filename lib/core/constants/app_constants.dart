@@ -21,6 +21,16 @@ class AppConstants {
     return 'https://84.247.138.71/smart-study';
   }
 
+  static String get socketUrl {
+    final uri = Uri.parse(baseUrl);
+    return Uri(scheme: uri.scheme, host: uri.host, port: uri.hasPort ? uri.port : null).toString();
+  }
+
+  static String get socketPath {
+    final path = Uri.parse(baseUrl).path.replaceAll(RegExp(r'/+$'), '');
+    return path.isEmpty ? '/socket.io' : '$path/socket.io';
+  }
+
   // Storage keys
   static const String tokenKey = 'auth_token';
   static const String refreshTokenKey = 'refresh_token';

@@ -4,6 +4,8 @@
 
 `ApiClient` is an initialized singleton wrapping Dio. It selects the backend in this order: `API_BASE_URL` dart define, web/desktop `http://localhost:4000`, or Android emulator `http://10.0.2.2:4000`. The request interceptor reads `auth_token` from secure storage and sends `Authorization: Bearer <token>`.
 
+The current app constants default to the deployed HTTPS backend when no override is supplied. Always inspect `AppConstants.baseUrl` rather than assuming localhost behavior.
+
 Use the backend `{ "error": "..." }` message through `apiErrorMessage`; connection failures receive a friendly offline message. A 401 refresh path is not yet implemented, so do not imply automatic refresh.
 
 Auth endpoints include register, login, current user, forgot password, profile update, avatar upload, password/email change, and account deletion. Successful login/register stores `token`; sign-out clears it.
@@ -38,6 +40,31 @@ Enums serialize using existing `name` or label behavior. Check each model before
 - `performanceProvider`: period-filtered summary, trends, subject/topic metrics, weekly activity, revisions, insights, and exam history.
 
 Prefer provider-owned API calls. A few specialized screens currently call Dio directly (AI generation, user profile detail, settings mutations); follow that only when the operation has no reusable feature state, otherwise place it in the responsible notifier.
+
+## Real-time notification contract
+
+- Backend `src/server.ts` creates an HTTP server shared by Express and Socket.IO.
+- The client sends `{ token: <JWT> }` in handshake auth.
+- Socket middleware verifies the JWT and joins `user:<userId>`.
+- Backend notification creation goes through `createNotification`, which persists first and emits `notification:new` to the recipient room.
+- Current emitters: friend request/acceptance, exam invitation, quiz completion, and AI quiz generation.
+- Flutter `SocketClient` forces WebSocket transport, derives its proxy path from `API_BASE_URL`, reconnects automatically, and is disposed on sign-out.
+- REST `GET /notifications` remains the durable source for initial history and manual refresh.
+- This is foreground in-app delivery, not closed-app push notification delivery.
+
+## Spaced-repetition contract
+
+- Quiz attempt submission is authoritative for scoring and scheduling.
+- `computeNextRevision` uses the interval ladder `[1, 3, 7, 14, 30]` and pass threshold `60`.
+- A failing score resets to one day; a passing score advances one step, capped at 30 days.
+- Store one `SpacedRepetition` row per user/quiz and expose `nextRevisionDate` through quiz, topic, home-dashboard, and performance responses.
+- The Settings spaced-repetition switch is currently UI-only and must not be described as controlling backend scheduling.
+
+## Settings and exam ownership
+
+- Dark mode is persisted locally with `SharedPreferences` and restored before app startup.
+- Font size, notification preference switches, default visibility, terms, and privacy controls remain incomplete/placeholders.
+- Classify exams as owned when their ID is returned by `tab=mine` or a successful local creation; fall back to `organizerId` only as additional evidence.
 
 ## Contract checklist
 

@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/socket_client.dart';
 import '../../../../shared/models/notification_model.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class NotificationState {
   final bool isLoading;
@@ -21,20 +23,72 @@ class NotificationState {
 
 class NotificationNotifier extends StateNotifier<NotificationState> {
   final _dio = ApiClient().dio;
+  bool _isRefreshing = false;
+  bool _isStarted = false;
 
-  NotificationNotifier() : super(const NotificationState()) { load(); }
+  NotificationNotifier() : super(const NotificationState());
+
+  Future<void> start() async {
+    if (_isStarted) return;
+    _isStarted = true;
+    await SocketClient.instance.connect(onNotification: _receiveNotification);
+    await load();
+  }
+
+  void stop() {
+    _isStarted = false;
+    SocketClient.instance.disconnect();
+    state = const NotificationState();
+  }
+
+  void _receiveNotification(Map<String, dynamic> data) {
+    final notification = NotificationModel.fromJson(data);
+    final remaining = state.notifications.where((n) => n.id != notification.id);
+    state = state.copyWith(notifications: [notification, ...remaining]);
+  }
 
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
+    await _fetchNotifications();
+  }
+
+  Future<void> refresh() async {
+    if (_isRefreshing) return;
+    await _fetchNotifications(showLoading: false);
+  }
+
+  Future<void> _fetchNotifications({bool showLoading = true}) async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    if (showLoading && !state.isLoading) {
+      state = state.copyWith(isLoading: true, error: null);
+    }
     try {
       final res = await _dio.get('/notifications');
       final notifications = (res.data['notifications'] as List<dynamic>)
           .map((n) => NotificationModel.fromJson(n as Map<String, dynamic>))
           .toList();
-      state = state.copyWith(isLoading: false, notifications: notifications);
+      final byId = <String, NotificationModel>{
+        for (final notification in notifications) notification.id: notification,
+        for (final notification in state.notifications)
+          notification.id: notification,
+      };
+      final merged = byId.values.toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      state = state.copyWith(isLoading: false, notifications: merged);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
+      if (showLoading) {
+        state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
+      }
+    } finally {
+      _isRefreshing = false;
     }
+  }
+
+  @override
+  void dispose() {
+    SocketClient.instance.disconnect();
+    super.dispose();
   }
 
   Future<void> markAllRead() async {
@@ -68,6 +122,19 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   }
 }
 
-final notificationProvider = StateNotifierProvider<NotificationNotifier, NotificationState>(
-  (ref) => NotificationNotifier(),
-);
+final notificationProvider =
+    StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
+  final notifier = NotificationNotifier();
+  ref.listen<bool>(
+    authProvider.select((state) => state.isAuthenticated),
+    (_, isAuthenticated) {
+      if (isAuthenticated) {
+        notifier.start();
+      } else {
+        notifier.stop();
+      }
+    },
+    fireImmediately: true,
+  );
+  return notifier;
+});

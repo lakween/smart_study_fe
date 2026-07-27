@@ -7,12 +7,28 @@ import '../../../../shared/models/question_model.dart';
 class ExamState {
   final bool isLoading;
   final List<ExamModel> exams;
+  final Set<String> ownedExamIds;
   final String? error;
 
-  const ExamState({this.isLoading = false, this.exams = const [], this.error});
+  const ExamState({
+    this.isLoading = false,
+    this.exams = const [],
+    this.ownedExamIds = const {},
+    this.error,
+  });
 
-  ExamState copyWith({bool? isLoading, List<ExamModel>? exams, String? error}) {
-    return ExamState(isLoading: isLoading ?? this.isLoading, exams: exams ?? this.exams, error: error);
+  ExamState copyWith({
+    bool? isLoading,
+    List<ExamModel>? exams,
+    Set<String>? ownedExamIds,
+    String? error,
+  }) {
+    return ExamState(
+      isLoading: isLoading ?? this.isLoading,
+      exams: exams ?? this.exams,
+      ownedExamIds: ownedExamIds ?? this.ownedExamIds,
+      error: error,
+    );
   }
 }
 
@@ -34,13 +50,20 @@ class ExamNotifier extends StateNotifier<ExamState> {
         _dio.get('/exams', queryParameters: {'tab': 'invited'}),
       ]);
       final byId = <String, ExamModel>{};
-      for (final res in results) {
+      final ownedExamIds = <String>{};
+      for (var i = 0; i < results.length; i++) {
+        final res = results[i];
         for (final e in (res.data['exams'] as List<dynamic>)) {
           final exam = ExamModel.fromJson(e as Map<String, dynamic>);
           byId[exam.id] = exam;
+          if (i == 0) ownedExamIds.add(exam.id);
         }
       }
-      state = state.copyWith(isLoading: false, exams: byId.values.toList());
+      state = state.copyWith(
+        isLoading: false,
+        exams: byId.values.toList(),
+        ownedExamIds: ownedExamIds,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
     }
@@ -77,7 +100,11 @@ class ExamNotifier extends StateNotifier<ExamState> {
         'participantIds': participantIds,
       });
       final exam = ExamModel.fromJson(res.data['exam'] as Map<String, dynamic>);
-      state = state.copyWith(isLoading: false, exams: [exam, ...state.exams]);
+      state = state.copyWith(
+        isLoading: false,
+        exams: [exam, ...state.exams.where((e) => e.id != exam.id)],
+        ownedExamIds: {...state.ownedExamIds, exam.id},
+      );
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
