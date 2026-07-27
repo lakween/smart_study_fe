@@ -49,7 +49,7 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: (passed ? AppColors.success : AppColors.error).withOpacity(0.1),
+                color: (passed ? AppColors.success : AppColors.error).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(passed ? '🎉 Passed!' : '😔 Keep Practicing', style: TextStyle(fontWeight: FontWeight.bold, color: passed ? AppColors.success : AppColors.error, fontSize: 16)),
@@ -62,7 +62,7 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen> {
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.warning.withOpacity(0.3))),
+              decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.warning.withValues(alpha: 0.3))),
               child: Row(
                 children: [
                   const Icon(Icons.access_alarm, color: AppColors.warning, size: 20),
@@ -84,7 +84,7 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCardBg : AppColors.cardBg,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: (isCorrect ? AppColors.success : AppColors.error).withOpacity(0.3)),
+                  border: Border.all(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.3)),
                   boxShadow: AppColors.cardShadow,
                 ),
                 child: Column(
@@ -102,10 +102,10 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen> {
                     if (ans?.selectedAnswer != null) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: (isCorrect ? AppColors.success : AppColors.error).withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: (isCorrect ? AppColors.success : AppColors.error).withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
                         child: Row(
                           children: [
-                            Text('Your answer: ', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                            const Text('Your answer: ', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
                             Text('${ans!.selectedAnswer!.label}. ${q.getOption(ans.selectedAnswer!)}',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isCorrect ? AppColors.success : AppColors.error)),
                           ],
@@ -116,7 +116,7 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen> {
                     if (!isCorrect)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: AppColors.success.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
                         child: Row(
                           children: [
                             const Text('Correct: ', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
@@ -140,7 +140,7 @@ class _QuizResultScreenState extends ConsumerState<QuizResultScreen> {
             const SizedBox(height: 20),
             Row(
               children: [
-                Expanded(child: OutlinedButton(onPressed: () => context.go('/quizzes/${quizId}/attempt'), child: const Text('Retry'))),
+                Expanded(child: OutlinedButton(onPressed: () => context.go('/quizzes/$quizId/attempt'), child: const Text('Retry'))),
                 const SizedBox(width: 12),
                 Expanded(child: ElevatedButton(onPressed: () => context.go('/home/dashboard'), child: const Text('Dashboard'))),
               ],

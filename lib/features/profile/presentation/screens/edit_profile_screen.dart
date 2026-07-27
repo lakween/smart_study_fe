@@ -109,7 +109,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 AppTextField(label: 'University / Institute', controller: _uniCtrl, prefixIcon: Icons.school_outlined),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<StudyLevel>(
-                  value: _studyLevel,
+                  initialValue: _studyLevel,
                   decoration: InputDecoration(labelText: 'Study Level', prefixIcon: const Icon(Icons.grade_outlined, size: 20, color: AppColors.textMuted), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                   items: StudyLevel.values.map((l) => DropdownMenuItem(value: l, child: Text(l.label))).toList(),
                   onChanged: (v) => setState(() => _studyLevel = v ?? _studyLevel),

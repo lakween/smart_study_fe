@@ -32,7 +32,7 @@ class TopicCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.topic_outlined, color: AppColors.primary, size: 22),
@@ -50,7 +50,7 @@ class TopicCard extends StatelessWidget {
                       PopupMenuButton<String>(
                         padding: EdgeInsets.zero,
                         iconSize: 18,
-                        icon: Icon(Icons.more_vert, size: 18, color: AppColors.textMuted),
+                        icon: const Icon(Icons.more_vert, size: 18, color: AppColors.textMuted),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         onSelected: (val) {
                           if (val == 'edit') onEdit?.call();
@@ -70,7 +70,7 @@ class TopicCard extends StatelessWidget {
                     children: [
                       VisibilityBadge(visibility: topic.visibility),
                       const SizedBox(width: 8),
-                      Icon(Icons.quiz_outlined, size: 12, color: AppColors.textMuted),
+                      const Icon(Icons.quiz_outlined, size: 12, color: AppColors.textMuted),
                       const SizedBox(width: 4),
                       Text('${topic.quizCount}', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
                       if (topic.lastScore != null) ...[

@@ -103,7 +103,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 children: [
                   Container(
                     height: 100,
-                    decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.7), AppColors.primaryLight])),
+                    decoration: BoxDecoration(gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.7), AppColors.primaryLight])),
                   ),
                   Transform.translate(
                     offset: const Offset(0, -40),

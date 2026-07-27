@@ -47,7 +47,9 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
   @override
   void dispose() {
     _titleCtrl.dispose(); _timeLimitCtrl.dispose();
-    for (final q in _questions) q.dispose();
+    for (final q in _questions) {
+      q.dispose();
+    }
     super.dispose();
   }
 
@@ -114,7 +116,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
                 AppTextField(label: 'Quiz Title *', controller: _titleCtrl, prefixIcon: Icons.quiz_outlined, validator: Validators.quizTitle),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _subjectId,
+                  initialValue: _subjectId,
                   hint: const Text('Select Subject *'),
                   decoration: InputDecoration(labelText: 'Subject', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                   items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
@@ -126,7 +128,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _topicId,
+                  initialValue: _topicId,
                   hint: const Text('Select Topic'),
                   decoration: InputDecoration(labelText: 'Topic', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                   items: topics.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name))).toList(),
@@ -152,7 +154,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
                         child: Container(
                           margin: const EdgeInsets.only(right: 6),
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(color: selected ? c : c.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: c.withOpacity(selected ? 1 : 0.3))),
+                          decoration: BoxDecoration(color: selected ? c : c.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: c.withValues(alpha: selected ? 1 : 0.3))),
                           child: Text(v.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? Colors.white : c), textAlign: TextAlign.center),
                         ),
                       ),
@@ -160,7 +162,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(value: _allowCopy, onChanged: (v) => setState(() => _allowCopy = v), title: const Text('Allow Copy'), activeColor: AppColors.primary, contentPadding: EdgeInsets.zero),
+                SwitchListTile(value: _allowCopy, onChanged: (v) => setState(() => _allowCopy = v), title: const Text('Allow Copy'), activeThumbColor: AppColors.primary, contentPadding: EdgeInsets.zero),
                 const Divider(height: 32),
                 Row(
                   children: [
@@ -181,7 +183,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
                 if (_questions.isEmpty)
                   Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(border: Border.all(color: AppColors.divider), borderRadius: BorderRadius.circular(12), color: AppColors.primary.withOpacity(0.02)),
+                    decoration: BoxDecoration(border: Border.all(color: AppColors.divider), borderRadius: BorderRadius.circular(12), color: AppColors.primary.withValues(alpha: 0.02)),
                     child: Center(child: Column(children: [
                       const Icon(Icons.help_outline, size: 40, color: AppColors.textMuted),
                       const SizedBox(height: 8),
@@ -215,9 +217,9 @@ class _QuestionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
-        color: AppColors.primary.withOpacity(0.02),
+        color: AppColors.primary.withValues(alpha: 0.02),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

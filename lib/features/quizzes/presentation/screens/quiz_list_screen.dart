@@ -99,9 +99,9 @@ class _Chip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSel ? AppColors.primary : AppColors.primary.withOpacity(0.08),
+          color: isSel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSel ? AppColors.primary : AppColors.primary.withOpacity(0.3)),
+          border: Border.all(color: isSel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3)),
         ),
         child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isSel ? Colors.white : AppColors.primary)),
       ),

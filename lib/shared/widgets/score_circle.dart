@@ -70,7 +70,7 @@ class _ScoreCircleState extends State<ScoreCircle> with SingleTickerProviderStat
                     ),
                     PieChartSectionData(
                       value: 100 - current,
-                      color: _scoreColor.withOpacity(0.12),
+                      color: _scoreColor.withValues(alpha: 0.12),
                       radius: widget.size * 0.18,
                       showTitle: false,
                     ),

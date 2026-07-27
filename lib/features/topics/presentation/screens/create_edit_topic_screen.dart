@@ -83,7 +83,7 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
               children: [
                 if (!isEditing)
                   DropdownButtonFormField<String>(
-                    value: _selectedSubjectId,
+                    initialValue: _selectedSubjectId,
                     hint: const Text('Select Subject'),
                     decoration: InputDecoration(labelText: 'Subject', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                     items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
@@ -113,9 +113,9 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
                           margin: const EdgeInsets.only(right: 6),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? c : c.withOpacity(0.08),
+                            color: selected ? c : c.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: c.withOpacity(selected ? 1 : 0.3)),
+                            border: Border.all(color: c.withValues(alpha: selected ? 1 : 0.3)),
                           ),
                           child: Text(v.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? Colors.white : c), textAlign: TextAlign.center),
                         ),
@@ -124,7 +124,7 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(value: _allowCopy, onChanged: (v) => setState(() => _allowCopy = v), title: const Text('Allow Copy', style: TextStyle(fontWeight: FontWeight.w600)), activeColor: AppColors.primary, contentPadding: EdgeInsets.zero),
+                SwitchListTile(value: _allowCopy, onChanged: (v) => setState(() => _allowCopy = v), title: const Text('Allow Copy', style: TextStyle(fontWeight: FontWeight.w600)), activeThumbColor: AppColors.primary, contentPadding: EdgeInsets.zero),
                 const SizedBox(height: 28),
                 AppButton(label: isEditing ? 'Save Changes' : 'Create Topic', onPressed: _saving ? null : _save, isLoading: _saving),
               ],

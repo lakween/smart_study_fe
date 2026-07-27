@@ -42,7 +42,7 @@ class MyProfileScreen extends ConsumerWidget {
                   Container(
                     height: 100,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.8), AppColors.primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.8), AppColors.primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight),
                     ),
                   ),
                   Transform.translate(

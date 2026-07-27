@@ -117,9 +117,9 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? c : c.withOpacity(0.08),
+          color: isSelected ? c : c.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? c : c.withOpacity(0.3)),
+          border: Border.all(color: isSelected ? c : c.withValues(alpha: 0.3)),
         ),
         child: Text(
           label,

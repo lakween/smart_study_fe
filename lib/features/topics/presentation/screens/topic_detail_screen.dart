@@ -44,7 +44,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
         appBar: AppBar(
           title: Text(topic.name),
           actions: [
-            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => context.push('/topics/${topicId}/edit')),
+            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => context.push('/topics/$topicId/edit')),
           ],
           bottom: const TabBar(tabs: [Tab(text: 'Quizzes'), Tab(text: 'Documents')]),
         ),
@@ -63,7 +63,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.warning.withOpacity(0.3))),
+                      decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.warning.withValues(alpha: 0.3))),
                       child: Row(
                         children: [
                           const Icon(Icons.access_alarm, color: AppColors.warning, size: 20),

@@ -53,18 +53,18 @@ class SubjectCardShimmer extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: AppColors.cardShadow,
         ),
-        child: Column(
+        child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ShimmerBox(width: double.infinity, height: 16, borderRadius: 4),
-            const SizedBox(height: 8),
-            const ShimmerBox(width: 100, height: 12, borderRadius: 4),
-            const SizedBox(height: 16),
-            const ShimmerBox(width: double.infinity, height: 10, borderRadius: 4),
-            const SizedBox(height: 6),
-            const ShimmerBox(width: 120, height: 10, borderRadius: 4),
-            const Spacer(),
-            const ShimmerBox(width: 60, height: 20, borderRadius: 20),
+            ShimmerBox(width: double.infinity, height: 16, borderRadius: 4),
+            SizedBox(height: 8),
+            ShimmerBox(width: 100, height: 12, borderRadius: 4),
+            SizedBox(height: 16),
+            ShimmerBox(width: double.infinity, height: 10, borderRadius: 4),
+            SizedBox(height: 6),
+            ShimmerBox(width: 120, height: 10, borderRadius: 4),
+            Spacer(),
+            ShimmerBox(width: 60, height: 20, borderRadius: 20),
           ],
         ),
       ),
@@ -92,17 +92,17 @@ class ListShimmer extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: AppColors.cardShadow,
         ),
-        child: Column(
+        child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const ShimmerBox(width: 40, height: 40, borderRadius: 20),
-                const SizedBox(width: 12),
+                ShimmerBox(width: 40, height: 40, borderRadius: 20),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       ShimmerBox(width: double.infinity, height: 14, borderRadius: 4),
                       SizedBox(height: 6),
                       ShimmerBox(width: 120, height: 12, borderRadius: 4),
@@ -111,8 +111,8 @@ class ListShimmer extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            const ShimmerBox(width: double.infinity, height: 10, borderRadius: 4),
+            SizedBox(height: 12),
+            ShimmerBox(width: double.infinity, height: 10, borderRadius: 4),
           ],
         ),
       ),

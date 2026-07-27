@@ -98,9 +98,9 @@ class HomeDashboardScreen extends ConsumerWidget {
               if (dashState.isLoading)
                 const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(20), child: ListShimmer(count: 3)))
               else ...[
-                SliverToBoxAdapter(
+                const SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                    padding: EdgeInsets.fromLTRB(20, 24, 20, 8),
                     child: SectionHeader(title: 'Overview'),
                   ),
                 ),
@@ -141,9 +141,9 @@ class HomeDashboardScreen extends ConsumerWidget {
                   ),
                 ],
                 if (dashState.dueForRevision.isNotEmpty) ...[
-                  SliverToBoxAdapter(
+                  const SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                      padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
                       child: SectionHeader(title: '📅 Due for Revision'),
                     ),
                   ),
@@ -166,9 +166,9 @@ class HomeDashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-                SliverToBoxAdapter(
+                const SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                    padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
                     child: SectionHeader(title: 'Recent Activity'),
                   ),
                 ),
@@ -185,9 +185,9 @@ class HomeDashboardScreen extends ConsumerWidget {
                     },
                   ),
                 ),
-                SliverToBoxAdapter(
+                const SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                    padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
                     child: SectionHeader(title: 'Quick Actions'),
                   ),
                 ),
@@ -282,7 +282,7 @@ class _ContinueCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.8), AppColors.primaryDark]),
+          gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.8), AppColors.primaryDark]),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -329,7 +329,7 @@ class _ActivityTile extends StatelessWidget {
             Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.quiz_outlined, size: 18, color: AppColors.primary),
@@ -347,7 +347,7 @@ class _ActivityTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: (attempt.scorePercent >= 60 ? AppColors.success : AppColors.error).withOpacity(0.1),
+                color: (attempt.scorePercent >= 60 ? AppColors.success : AppColors.error).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(

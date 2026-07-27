@@ -38,7 +38,9 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
           _secondsRemaining = _totalSeconds;
           _timer = Timer.periodic(const Duration(seconds: 1), (_) {
             if (_secondsRemaining <= 0) { _timer?.cancel(); _submitQuiz(); }
-            else setState(() => _secondsRemaining--);
+            else {
+              setState(() => _secondsRemaining--);
+            }
           });
         }
       }
@@ -99,7 +101,7 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
             Container(
               margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(color: timerColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: timerColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
               child: Row(
                 children: [
                   Icon(Icons.timer, size: 16, color: timerColor),
@@ -148,7 +150,7 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
                             children: [
                               Container(
                                 width: 32, height: 32,
-                                decoration: BoxDecoration(color: isSelected ? Colors.white.withOpacity(0.2) : AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                                decoration: BoxDecoration(color: isSelected ? Colors.white.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
                                 child: Center(child: Text(opt.label, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : AppColors.primary))),
                               ),
                               const SizedBox(width: 14),

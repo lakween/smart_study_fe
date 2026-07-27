@@ -132,7 +132,9 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
   }
 
   @override
-  void dispose() { for (final q in _questions) q.dispose(); super.dispose(); }
+  void dispose() { for (final q in _questions) {
+    q.dispose();
+  } super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +191,7 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
                         onTap: _pickFile,
                         child: Container(
                           width: double.infinity, padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(border: Border.all(color: _file != null ? AppColors.primary : AppColors.divider, width: 1.5), borderRadius: BorderRadius.circular(16), color: _file != null ? AppColors.primary.withOpacity(0.04) : null),
+                          decoration: BoxDecoration(border: Border.all(color: _file != null ? AppColors.primary : AppColors.divider, width: 1.5), borderRadius: BorderRadius.circular(16), color: _file != null ? AppColors.primary.withValues(alpha: 0.04) : null),
                           child: _file != null
                               ? Column(children: [
                                   const Icon(Icons.check_circle, size: 48, color: AppColors.success),
@@ -210,7 +212,7 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
                       ),
                       const SizedBox(height: 20),
                       DropdownButtonFormField<String>(
-                        value: _subjectId,
+                        initialValue: _subjectId,
                         hint: const Text('Select Subject'),
                         decoration: InputDecoration(labelText: 'Subject', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                         items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
@@ -221,7 +223,7 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _topicId,
+                        initialValue: _topicId,
                         hint: const Text('Select Topic'),
                         decoration: InputDecoration(labelText: 'Topic', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                         items: topics.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name))).toList(),
@@ -239,9 +241,9 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                               decoration: BoxDecoration(
-                                color: sel ? AppColors.primary : AppColors.primary.withOpacity(0.08),
+                                color: sel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: sel ? AppColors.primary : AppColors.primary.withOpacity(0.3)),
+                                border: Border.all(color: sel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3)),
                               ),
                               child: Text('$n', style: TextStyle(fontWeight: FontWeight.bold, color: sel ? Colors.white : AppColors.primary)),
                             ),
@@ -281,7 +283,7 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.warning.withOpacity(0.3))),
+                            decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.warning.withValues(alpha: 0.3))),
                             child: const Row(
                               children: [
                                 Icon(Icons.warning_amber, color: AppColors.warning, size: 18),

@@ -31,7 +31,7 @@ class AvatarWidget extends StatelessWidget {
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return CircleAvatar(
         radius: radius,
-        backgroundColor: AppColors.textMuted.withOpacity(0.2),
+        backgroundColor: AppColors.textMuted.withValues(alpha: 0.2),
         child: ClipOval(
           child: CachedNetworkImage(
             imageUrl: imageUrl!,

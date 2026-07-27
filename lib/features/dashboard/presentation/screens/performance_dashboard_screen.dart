@@ -58,9 +58,9 @@ class _PerformanceDashboardScreenState extends ConsumerState<PerformanceDashboar
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: sel ? AppColors.primary : AppColors.primary.withOpacity(0.08),
+                        color: sel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: sel ? AppColors.primary : AppColors.primary.withOpacity(0.3)),
+                        border: Border.all(color: sel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3)),
                       ),
                       child: Text(p, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppColors.primary)),
                     ),
@@ -116,7 +116,7 @@ class _PerformanceDashboardScreenState extends ConsumerState<PerformanceDashboar
                               color: AppColors.primary,
                               barWidth: 3,
                               dotData: const FlDotData(show: true),
-                              belowBarData: BarAreaData(show: true, color: AppColors.primary.withOpacity(0.08)),
+                              belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.08)),
                             ),
                           ],
                         ),
@@ -188,7 +188,7 @@ class _PerformanceDashboardScreenState extends ConsumerState<PerformanceDashboar
               ...upcomingRevisions.map((r) => Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.warning.withOpacity(0.3))),
+                decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.warning.withValues(alpha: 0.3))),
                 child: Row(children: [
                   const Icon(Icons.access_alarm, color: AppColors.warning, size: 18),
                   const SizedBox(width: 10),
@@ -242,7 +242,7 @@ class _InsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.primary.withOpacity(0.3))),
+    decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.primary.withValues(alpha: 0.3))),
     child: Row(children: [
       Text(icon, style: const TextStyle(fontSize: 18)),
       const SizedBox(width: 12),

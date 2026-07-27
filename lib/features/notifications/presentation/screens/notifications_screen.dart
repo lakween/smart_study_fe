@@ -53,7 +53,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           const Divider(height: 1),
           Expanded(
             child: notifs.isEmpty
-                ? EmptyState(icon: Icons.notifications_none, title: "You're all caught up! 🎉", message: 'No notifications right now')
+                ? const EmptyState(icon: Icons.notifications_none, title: "You're all caught up! 🎉", message: 'No notifications right now')
                 : RefreshIndicator(
                     onRefresh: () => ref.read(notificationProvider.notifier).load(),
                     child: ListView.separated(
@@ -83,9 +83,9 @@ class _NChip extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
-        color: selected ? AppColors.primary : AppColors.primary.withOpacity(0.08),
+        color: selected ? AppColors.primary : AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: selected ? AppColors.primary : AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: selected ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: selected ? Colors.white : AppColors.primary)),
     ),

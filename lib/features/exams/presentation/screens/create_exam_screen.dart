@@ -87,7 +87,7 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
                 AppTextField(label: 'Exam Title *', controller: _titleCtrl, prefixIcon: Icons.assignment_outlined, validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _subjectId, hint: const Text('Select Subject *'),
+                  initialValue: _subjectId, hint: const Text('Select Subject *'),
                   decoration: InputDecoration(labelText: 'Subject', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                   items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
                   onChanged: (v) {
@@ -98,7 +98,7 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _topicId, hint: const Text('Select Topic *'),
+                  initialValue: _topicId, hint: const Text('Select Topic *'),
                   decoration: InputDecoration(labelText: 'Topic', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                   items: topics.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name))).toList(),
                   onChanged: (v) => setState(() => _topicId = v),
@@ -117,9 +117,9 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
-                            color: sel ? AppColors.primary : AppColors.primary.withOpacity(0.08),
+                            color: sel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: sel ? AppColors.primary : AppColors.primary.withOpacity(0.3)),
+                            border: Border.all(color: sel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3)),
                           ),
                           child: Text(t == ExamType.individual ? 'Individual' : 'Friend Exam',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppColors.primary),
@@ -141,9 +141,9 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: sel ? AppColors.primary : AppColors.primary.withOpacity(0.08),
+                          color: sel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: sel ? AppColors.primary : AppColors.primary.withOpacity(0.3)),
+                          border: Border.all(color: sel ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3)),
                         ),
                         child: Text('${d}m', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppColors.primary)),
                       ),
@@ -188,7 +188,11 @@ class _CreateExamScreenState extends ConsumerState<CreateExamScreen> {
                   const SizedBox(height: 8),
                   ...friends.map((f) => CheckboxListTile(
                     value: _selectedFriends.contains(f.id),
-                    onChanged: (v) => setState(() { if (v!) _selectedFriends.add(f.id); else _selectedFriends.remove(f.id); }),
+                    onChanged: (v) => setState(() { if (v!) {
+                      _selectedFriends.add(f.id);
+                    } else {
+                      _selectedFriends.remove(f.id);
+                    } }),
                     title: Text(f.fullName),
                     subtitle: f.university != null ? Text(f.university!) : null,
                     secondary: AvatarWidget(name: f.fullName, radius: 18),

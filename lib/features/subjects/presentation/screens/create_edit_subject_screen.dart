@@ -103,9 +103,9 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
                           margin: const EdgeInsets.only(right: 6),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? c : c.withOpacity(0.08),
+                            color: selected ? c : c.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: c.withOpacity(selected ? 1 : 0.3)),
+                            border: Border.all(color: c.withValues(alpha: selected ? 1 : 0.3)),
                           ),
                           child: Column(
                             children: [
@@ -125,7 +125,7 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
                   onChanged: (v) => setState(() => _allowCopy = v),
                   title: const Text('Allow Copy', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Allow other users to copy this content to their account'),
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                   contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: 28),

@@ -16,9 +16,9 @@ class AppConstants {
     const override = String.fromEnvironment('API_BASE_URL');
     if (override.isNotEmpty) return override;
     if (kReleaseMode) return productionBaseUrl;
-    if (kIsWeb) return 'http://localhost:4000';
-    if (Platform.isAndroid) return 'http://10.0.2.2:4000';
-    return 'http://localhost:4000';
+    if (kIsWeb) return 'https://84.247.138.71/smart-study';
+    if (Platform.isAndroid) return 'https://84.247.138.71/smart-study';
+    return 'https://84.247.138.71/smart-study';
   }
 
   // Storage keys

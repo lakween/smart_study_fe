@@ -43,7 +43,7 @@ class _ExamResultScreenState extends ConsumerState<ExamResultScreen> {
           children: [
             Center(child: ScoreCircle(score: myResult.score ?? 0, size: 160)),
             const SizedBox(height: 12),
-            Text('${exam.title}', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+            Text(exam.title, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
             const SizedBox(height: 20),
             if (exam.participants.length > 1) ...[
               const Align(alignment: Alignment.centerLeft, child: Text('Leaderboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
@@ -56,9 +56,9 @@ class _ExamResultScreenState extends ConsumerState<ExamResultScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isMe ? AppColors.primary.withOpacity(0.08) : (Theme.of(context).brightness == Brightness.dark ? AppColors.darkCardBg : AppColors.cardBg),
+                    color: isMe ? AppColors.primary.withValues(alpha: 0.08) : (Theme.of(context).brightness == Brightness.dark ? AppColors.darkCardBg : AppColors.cardBg),
                     borderRadius: BorderRadius.circular(12),
-                    border: isMe ? Border.all(color: AppColors.primary.withOpacity(0.4)) : null,
+                    border: isMe ? Border.all(color: AppColors.primary.withValues(alpha: 0.4)) : null,
                     boxShadow: AppColors.cardShadow,
                   ),
                   child: Row(
@@ -66,7 +66,7 @@ class _ExamResultScreenState extends ConsumerState<ExamResultScreen> {
                       Container(
                         width: 32, height: 32,
                         decoration: BoxDecoration(
-                          color: rank <= 3 ? [AppColors.warning, AppColors.textMuted, const Color(0xFFB45309)][rank - 1].withOpacity(0.15) : AppColors.divider,
+                          color: rank <= 3 ? [AppColors.warning, AppColors.textMuted, const Color(0xFFB45309)][rank - 1].withValues(alpha: 0.15) : AppColors.divider,
                           shape: BoxShape.circle,
                         ),
                         child: Center(child: Text('$rank', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: rank <= 3 ? [AppColors.warning, AppColors.textMuted, const Color(0xFFB45309)][rank - 1] : AppColors.textSecondary))),

@@ -124,7 +124,7 @@ class _ExamCard extends StatelessWidget {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: _statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(color: _statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
                 child: Text(exam.status.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _statusColor)),
               ),
             ],
@@ -132,12 +132,12 @@ class _ExamCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.timer_outlined, size: 14, color: AppColors.textMuted),
+              const Icon(Icons.timer_outlined, size: 14, color: AppColors.textMuted),
               const SizedBox(width: 4),
               Text(AppHelpers.formatDuration(exam.durationMinutes), style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
               const SizedBox(width: 16),
               if (exam.startTime != null) ...[
-                Icon(Icons.calendar_today, size: 14, color: AppColors.textMuted),
+                const Icon(Icons.calendar_today, size: 14, color: AppColors.textMuted),
                 const SizedBox(width: 4),
                 Text(AppHelpers.formatDateTime(exam.startTime!), style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
               ],

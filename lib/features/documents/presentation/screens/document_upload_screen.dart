@@ -87,7 +87,7 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                 AppTextField(label: 'Document Title *', controller: _titleCtrl, prefixIcon: Icons.title, validator: (v) => Validators.required(v, 'Title')),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _subjectId,
+                  initialValue: _subjectId,
                   hint: const Text('Select Subject'),
                   decoration: InputDecoration(labelText: 'Subject *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                   items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
@@ -99,7 +99,7 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _topicId,
+                  initialValue: _topicId,
                   hint: const Text('Select Topic (optional)'),
                   decoration: InputDecoration(labelText: 'Topic', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
                   items: topics.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name))).toList(),
@@ -114,7 +114,7 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                     decoration: BoxDecoration(
                       border: Border.all(color: _pickedFile != null ? AppColors.primary : AppColors.divider, style: BorderStyle.solid, width: 1.5),
                       borderRadius: BorderRadius.circular(12),
-                      color: _pickedFile != null ? AppColors.primary.withOpacity(0.05) : Colors.transparent,
+                      color: _pickedFile != null ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
                     ),
                     child: _pickedFile != null
                         ? Column(
@@ -126,13 +126,13 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                               TextButton(onPressed: _pickFile, child: const Text('Change file')),
                             ],
                           )
-                        : Column(
+                        : const Column(
                             children: [
-                              const Icon(Icons.cloud_upload_outlined, size: 48, color: AppColors.textMuted),
-                              const SizedBox(height: 12),
-                              const Text('Tap to select file', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                              const SizedBox(height: 4),
-                              const Text('PDF, JPG, PNG, JPEG • Max 10MB', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              Icon(Icons.cloud_upload_outlined, size: 48, color: AppColors.textMuted),
+                              SizedBox(height: 12),
+                              Text('Tap to select file', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                              SizedBox(height: 4),
+                              Text('PDF, JPG, PNG, JPEG • Max 10MB', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
                             ],
                           ),
                   ),
@@ -155,7 +155,7 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                         child: Container(
                           margin: const EdgeInsets.only(right: 6),
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(color: selected ? c : c.withOpacity(0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: c.withOpacity(selected ? 1 : 0.3))),
+                          decoration: BoxDecoration(color: selected ? c : c.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: c.withValues(alpha: selected ? 1 : 0.3))),
                           child: Text(v.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? Colors.white : c), textAlign: TextAlign.center),
                         ),
                       ),
@@ -163,7 +163,7 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(value: _allowCopy, onChanged: (v) => setState(() => _allowCopy = v), title: const Text('Allow Copy', style: TextStyle(fontWeight: FontWeight.w600)), activeColor: AppColors.primary, contentPadding: EdgeInsets.zero),
+                SwitchListTile(value: _allowCopy, onChanged: (v) => setState(() => _allowCopy = v), title: const Text('Allow Copy', style: TextStyle(fontWeight: FontWeight.w600)), activeThumbColor: AppColors.primary, contentPadding: EdgeInsets.zero),
                 if (_uploading) ...[
                   const SizedBox(height: 16),
                   LinearProgressIndicator(value: _uploadProgress, backgroundColor: AppColors.divider, color: AppColors.primary),

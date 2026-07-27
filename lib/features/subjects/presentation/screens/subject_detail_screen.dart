@@ -91,7 +91,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: AppColors.accent.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.accent.withOpacity(0.3))),
+                          decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.accent.withValues(alpha: 0.3))),
                           child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.copy, size: 11, color: AppColors.accent), SizedBox(width: 4), Text('Copyable', style: TextStyle(fontSize: 11, color: AppColors.accent, fontWeight: FontWeight.w600))]),
                         ),
                       ],
@@ -155,8 +155,9 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             return FloatingActionButton(
               heroTag: 'subject_fab',
               onPressed: () {
-                if (tab == 0) context.push('/topics/create');
-                else if (tab == 1) context.push('/quizzes/create');
+                if (tab == 0) {
+                  context.push('/topics/create');
+                } else if (tab == 1) context.push('/quizzes/create');
                 else context.push('/documents/upload');
               },
               child: const Icon(Icons.add),
@@ -176,7 +177,7 @@ class _StatPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(20)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: AppColors.primary),
         const SizedBox(width: 4),
@@ -196,7 +197,7 @@ class _DocTile extends StatelessWidget {
     return ListTile(
       leading: Container(
         width: 44, height: 44,
-        decoration: BoxDecoration(color: (isPdf ? AppColors.error : AppColors.primary).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: (isPdf ? AppColors.error : AppColors.primary).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
         child: Icon(isPdf ? Icons.picture_as_pdf : Icons.image_outlined, color: isPdf ? AppColors.error : AppColors.primary),
       ),
       title: Text(doc.title, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),

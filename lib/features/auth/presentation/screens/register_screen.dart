@@ -151,7 +151,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 AppTextField(label: 'University / Institute (optional)', controller: _universityCtrl, prefixIcon: Icons.school_outlined),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<StudyLevel>(
-                  value: _studyLevel,
+                  initialValue: _studyLevel,
                   decoration: InputDecoration(
                     labelText: 'Study Level',
                     prefixIcon: const Icon(Icons.grade_outlined, size: 20, color: AppColors.textMuted),

@@ -49,7 +49,7 @@ class QuizCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: (quiz.bestScore! >= 60 ? AppColors.success : AppColors.error).withOpacity(0.12),
+                      color: (quiz.bestScore! >= 60 ? AppColors.success : AppColors.error).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -65,18 +65,18 @@ class QuizCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.help_outline, size: 14, color: AppColors.textMuted),
+                const Icon(Icons.help_outline, size: 14, color: AppColors.textMuted),
                 const SizedBox(width: 4),
                 Text('${quiz.questionCount} questions', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
                 if (quiz.timeLimitMinutes != null) ...[
                   const SizedBox(width: 12),
-                  Icon(Icons.timer_outlined, size: 14, color: AppColors.textMuted),
+                  const Icon(Icons.timer_outlined, size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 4),
                   Text('${quiz.timeLimitMinutes}m', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
                 ],
                 if (quiz.lastAttemptDate != null) ...[
                   const SizedBox(width: 12),
-                  Icon(Icons.access_time, size: 14, color: AppColors.textMuted),
+                  const Icon(Icons.access_time, size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 4),
                   Text(AppHelpers.timeAgo(quiz.lastAttemptDate!), style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
                 ],

@@ -43,9 +43,9 @@ class SubjectCard extends StatelessWidget {
             children: [
               Container(
                 height: 6,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.primary,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
               ),
               Padding(
@@ -71,7 +71,7 @@ class SubjectCard extends StatelessWidget {
                           PopupMenuButton<String>(
                             padding: EdgeInsets.zero,
                             iconSize: 18,
-                            icon: Icon(Icons.more_vert, size: 18, color: AppColors.textMuted),
+                            icon: const Icon(Icons.more_vert, size: 18, color: AppColors.textMuted),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             onSelected: (val) {
                               if (val == 'edit') onEdit?.call();
@@ -98,11 +98,11 @@ class SubjectCard extends StatelessWidget {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(Icons.book_outlined, size: 13, color: AppColors.textMuted),
+                        const Icon(Icons.book_outlined, size: 13, color: AppColors.textMuted),
                         const SizedBox(width: 3),
                         Text('${subject.topicCount}', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
                         const SizedBox(width: 8),
-                        Icon(Icons.quiz_outlined, size: 13, color: AppColors.textMuted),
+                        const Icon(Icons.quiz_outlined, size: 13, color: AppColors.textMuted),
                         const SizedBox(width: 3),
                         Text('${subject.quizCount}', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
                       ],
