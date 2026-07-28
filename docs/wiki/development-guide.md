@@ -11,6 +11,14 @@ npx prisma migrate dev
 npm run dev
 ```
 
+Create the repeatable large development dataset when testing discovery and scrolling:
+
+```powershell
+npm run seed:test-users
+```
+
+This replaces only `seed.user001@smartstudy.test` through `seed.user100@smartstudy.test`. Every generated account uses password `test@123` and receives 6 subjects, 12 topics, and 24 quizzes.
+
 Flutter directory: `C:\Users\lakwe\Downloads\Smart_Study_App\Smart_Study_App\my_app`
 
 ```powershell
@@ -63,7 +71,7 @@ High priority:
 
 - Add backend/frontend automated tests for authentication, visibility, quiz scoring, exam participation, and friendships.
 - Handle Zod errors as 400 responses rather than generic 500 errors.
-- Implement token-expiry/401 UX; automatic refresh tokens do not exist.
+- Refresh tokens do not exist. Authenticated REST `401` responses and Socket.IO authentication failures automatically clear the session and return the user to login.
 - Remove sensitive Dio request/response body logging from release builds.
 - Delete physical upload files when their records/account are removed, or document retention policy.
 - Add database constraints ensuring a question belongs to exactly one quiz or exam.
@@ -77,7 +85,7 @@ Functional gaps:
 - Friends/request collections are separate from the notification stream and still require their own refresh after an incoming request.
 - Document viewing depends on external URL/open behavior; offline caching is absent.
 - Dashboard uses dynamic maps instead of typed models.
-- No pagination exists for growing subjects, documents, quizzes, notifications, or activity histories.
+- Friend discovery is paginated. Pagination is still absent for growing subjects, documents, quizzes, notifications, and activity histories.
 
 Security/data notes:
 
@@ -91,10 +99,14 @@ Security/data notes:
 
 1. Tests and Zod error handling.
 2. Complete settings persistence and application.
-3. Friend/request foreground synchronization or SSE.
+3. Synchronize friend/request collections when related Socket.IO events arrive.
 4. Copy workflows for subjects/topics/quizzes, or remove unused flags.
 5. Pagination and typed dashboard models.
-6. Production password reset, logging hardening, upload cleanup, and deployment documentation.
+6. Production password reset, logging hardening, and upload cleanup.
+
+## Production deployment
+
+The backend repository contains `.github/workflows/deploy.yml` for automatic deployment after `main` passes validation. It uses versioned releases, shared production data, Prisma migrations, a restricted deployment user, systemd, a health check, and automatic application rollback. Follow [`backend/DEPLOYMENT.md`](../../../backend/DEPLOYMENT.md) for the required Ubuntu, SSH, GitHub secret, and Nginx WebSocket configuration.
 
 ## Keeping this wiki current
 

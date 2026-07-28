@@ -51,6 +51,14 @@ class Validators {
     return null;
   }
 
+  static String? optionalQuizTimeLimit(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final minutes = int.tryParse(value.trim());
+    if (minutes == null) return 'Enter the time limit in whole minutes';
+    if (minutes < 1 || minutes > 180) return 'Time limit must be between 1 and 180 minutes';
+    return null;
+  }
+
   static String? questionText(String? value) {
     if (value == null || value.trim().isEmpty) return AppStrings.questionRequired;
     if (value.trim().length < AppConstants.minQuestionLength) {

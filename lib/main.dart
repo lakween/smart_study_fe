@@ -6,6 +6,7 @@ import 'core/network/api_client.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/settings/presentation/providers/theme_provider.dart';
+import 'features/auth/presentation/providers/auth_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,20 @@ class SmartStudyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(darkModeProvider);
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.sessionExpired && previous?.sessionExpired != true) {
+        appRouter.go('/login');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final context = rootNavigatorKey.currentContext;
+          if (context == null) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Your session is no longer valid. Please sign in again.'),
+            ),
+          );
+        });
+      }
+    });
 
     return MaterialApp.router(
       title: 'Smart Study',

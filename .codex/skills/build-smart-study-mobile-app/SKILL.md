@@ -28,6 +28,11 @@ description: Build, extend, debug, review, deploy, or test the Smart Study Flutt
 - Keep exam ownership based on the backend `mine` result and locally created exam IDs, not only `organizerId`, so new exams appear immediately.
 - Treat spaced-repetition scheduling as backend-owned. Quiz submission updates `[1, 3, 7, 14, 30]` day intervals at a 60% pass threshold; Flutter displays `nextRevisionDate` but does not calculate it.
 - Keep destructive actions behind confirmation and keep private/friends/public visibility and `allowCopy` rules intact.
+- Treat **My Subjects** as owner-only. `GET /subjects` returns only the authenticated user's subjects; keep cross-user discovery in explicit social/discovery flows.
+- Preserve parent context in nested creation flows. Subject-scoped topic creation must not ask for a subject; topic-scoped quiz creation must not ask for a subject or topic.
+- Keep quiz ownership controls server-authoritative. Owned quiz cards may edit/delete; edit replaces the current question set, and deletion requires confirmation.
+- Quiz time limits are optional whole minutes from 1 to 180. Before an attempt, offer timed practice when a limit exists and always offer untimed practice; start timing only after mode selection.
+- Normalize user-authored subject, topic, quiz, question, option, and explanation text before PostgreSQL writes; remove NUL characters and validate the normalized value.
 - Do not add a new state-management, routing, HTTP, persistence, serialization, or design-system library unless the request requires it.
 
 ## Add a feature consistently
@@ -56,6 +61,8 @@ For backend changes, also run from `../backend`:
 npm run build
 npm audit --omit=dev
 ```
+
+Use `npm run seed:test-users` when development needs the repeatable 100-user dataset. It replaces only `seed.user###@smartstudy.test` accounts and creates subjects, topics, quizzes, and questions for pagination/content testing.
 
 Run `dart format lib test` when formatting changes are authorized. For platform-specific work, also run the relevant build or launch command. Use `--dart-define=API_BASE_URL=<url>` for non-default backend locations; Android emulator localhost maps to `10.0.2.2`.
 

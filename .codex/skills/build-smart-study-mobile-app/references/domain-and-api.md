@@ -6,7 +6,7 @@
 
 The current app constants default to the deployed HTTPS backend when no override is supplied. Always inspect `AppConstants.baseUrl` rather than assuming localhost behavior.
 
-Use the backend `{ "error": "..." }` message through `apiErrorMessage`; connection failures receive a friendly offline message. A 401 refresh path is not yet implemented, so do not imply automatic refresh.
+Use the backend `{ "error": "..." }` message through `apiErrorMessage`; connection failures receive a friendly offline message. There are no refresh tokens. An authenticated REST `401` or a Socket.IO authentication failure clears the stored token, disconnects the socket, resets `authProvider`, and redirects to login once.
 
 Auth endpoints include register, login, current user, forgot password, profile update, avatar upload, password/email change, and account deletion. Successful login/register stores `token`; sign-out clears it.
 
@@ -29,12 +29,12 @@ Enums serialize using existing `name` or label behavior. Check each model before
 ## Provider/API ownership
 
 - `authProvider`: authentication, session check, password reset, profile and avatar.
-- `subjectProvider`: subject CRUD/copy and entity lookup.
+- `subjectProvider`: owner-only personal subject CRUD and entity lookup. Public/friend subjects do not belong in My Subjects.
 - `topicProvider`: subject-filtered loading, topic CRUD/copy, entity/filter lookup.
 - `documentProvider`: multipart upload with progress, delete/copy, entity/filter lookup.
 - `quizProvider`: quiz loading/create/copy, attempt submission/results, entity lookup.
 - `examProvider`: mine/invited loading, detail/start/submit/create, entity lookup.
-- `friendProvider`: lists, search, send/accept/decline/cancel/remove friendship actions.
+- `friendProvider`: accepted friends, separate received/sent requests, paginated people discovery/search, and send/accept/decline/cancel/remove actions.
 - `notificationProvider`: load, mark one/all read, dismiss.
 - `dashboardProvider`: home statistics, revision queue, recent activity, last subject/topic.
 - `performanceProvider`: period-filtered summary, trends, subject/topic metrics, weekly activity, revisions, insights, and exam history.
@@ -45,7 +45,7 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 
 - Backend `src/server.ts` creates an HTTP server shared by Express and Socket.IO.
 - The client sends `{ token: <JWT> }` in handshake auth.
-- Socket middleware verifies the JWT and joins `user:<userId>`.
+- REST and Socket middleware verify both the JWT and that its user still exists before allowing protected work; valid sockets join `user:<userId>`.
 - Backend notification creation goes through `createNotification`, which persists first and emits `notification:new` to the recipient room.
 - Current emitters: friend request/acceptance, exam invitation, quiz completion, and AI quiz generation.
 - Flutter `SocketClient` forces WebSocket transport, derives its proxy path from `API_BASE_URL`, reconnects automatically, and is disposed on sign-out.
@@ -59,6 +59,15 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 - A failing score resets to one day; a passing score advances one step, capped at 30 days.
 - Store one `SpacedRepetition` row per user/quiz and expose `nextRevisionDate` through quiz, topic, home-dashboard, and performance responses.
 - The Settings spaced-repetition switch is currently UI-only and must not be described as controlling backend scheduling.
+
+## Nested creation and quiz practice
+
+- Subject Details opens topic creation with a fixed `subjectId`; the form does not render a subject selector.
+- Topic Details opens `/quizzes/create` with fixed subject/topic navigation context; the form does not render either selector.
+- Owned quizzes support update and confirmed deletion. Updating questions replaces the quiz's current question set.
+- Quiz `timeLimitMinutes` is nullable and constrained to 1-180 when present.
+- Attempt startup offers timed mode only when a limit exists and always offers untimed mode. Timed mode auto-submits at zero; both modes record elapsed time.
+- Subject/topic/quiz text schemas remove NUL characters before validation to prevent PostgreSQL UTF-8 `0x00` errors.
 
 ## Settings and exam ownership
 

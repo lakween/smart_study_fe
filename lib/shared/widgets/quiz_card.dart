@@ -8,8 +8,17 @@ class QuizCard extends StatelessWidget {
   final QuizModel quiz;
   final VoidCallback? onPractice;
   final VoidCallback? onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
-  const QuizCard({super.key, required this.quiz, this.onPractice, this.onTap});
+  const QuizCard({
+    super.key,
+    required this.quiz,
+    this.onPractice,
+    this.onTap,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +68,28 @@ class QuizCard extends StatelessWidget {
                         color: quiz.bestScore! >= 60 ? AppColors.success : AppColors.error,
                       ),
                     ),
+                  ),
+                if (onEdit != null || onDelete != null)
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.more_vert, color: AppColors.textMuted),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    onSelected: (value) {
+                      if (value == 'edit') onEdit?.call();
+                      if (value == 'delete') onDelete?.call();
+                    },
+                    itemBuilder: (_) => [
+                      if (onEdit != null)
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('Edit quiz')]),
+                        ),
+                      if (onDelete != null)
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(children: [Icon(Icons.delete_outline, size: 18, color: AppColors.error), SizedBox(width: 8), Text('Delete', style: TextStyle(color: AppColors.error))]),
+                        ),
+                    ],
                   ),
               ],
             ),

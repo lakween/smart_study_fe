@@ -1,29 +1,19 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
+import '../config/app_environment.dart';
 
 class AppConstants {
   AppConstants._();
 
   static const String appVersion = '1.0.0';
 
-  static const String productionBaseUrl =
-      'https://84.247.138.71/smart-study';
-
-  /// Backend base URL. Release builds use [productionBaseUrl]. Debug and
-  /// profile builds use the appropriate localhost alias for local development.
-  /// Override either behavior with `--dart-define=API_BASE_URL=<url>`.
-  static String get baseUrl {
-    const override = String.fromEnvironment('API_BASE_URL');
-    if (override.isNotEmpty) return override;
-    if (kReleaseMode) return productionBaseUrl;
-    if (kIsWeb) return 'https://84.247.138.71/smart-study';
-    if (Platform.isAndroid) return 'https://84.247.138.71/smart-study';
-    return 'https://84.247.138.71/smart-study';
-  }
+  static String get baseUrl => AppEnvironment.baseUrl;
 
   static String get socketUrl {
     final uri = Uri.parse(baseUrl);
-    return Uri(scheme: uri.scheme, host: uri.host, port: uri.hasPort ? uri.port : null).toString();
+    return Uri(
+            scheme: uri.scheme,
+            host: uri.host,
+            port: uri.hasPort ? uri.port : null)
+        .toString();
   }
 
   static String get socketPath {
@@ -60,7 +50,12 @@ class AppConstants {
   static const List<int> durationOptions = [15, 30, 45, 60, 90, 120];
 
   // Supported file types
-  static const List<String> supportedFileExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+  static const List<String> supportedFileExtensions = [
+    'pdf',
+    'jpg',
+    'jpeg',
+    'png'
+  ];
 
   // Pagination
   static const int pageSize = 20;

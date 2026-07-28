@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -24,8 +26,9 @@ class _EditableQuestion {
   TextEditingController optC = TextEditingController();
   TextEditingController optD = TextEditingController();
   TextEditingController explanation = TextEditingController();
+  String sourceExcerpt;
   AnswerOption correct = AnswerOption.a;
-  _EditableQuestion({required this.id, required String qText, required String a, required String b, required String c, required String d, required this.correct, String? exp}) {
+  _EditableQuestion({required this.id, required String qText, required String a, required String b, required String c, required String d, required this.correct, String? exp, this.sourceExcerpt = ''}) {
     text.text = qText; optA.text = a; optB.text = b; optC.text = c; optD.text = d;
     if (exp != null) explanation.text = exp;
   }
@@ -43,11 +46,15 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
   PlatformFile? _file;
   String? _subjectId, _topicId;
   int _questionCount = 10;
+  String _difficulty = 'mixed';
+  final _learningObjectiveController = TextEditingController();
+  final _languageController = TextEditingController(text: 'English');
   bool _generating = false;
   int _genStage = 0;
   String? _genError;
   List<_EditableQuestion> _questions = [];
   bool _saving = false;
+  final Set<String> _regeneratingQuestionIds = {};
 
   final List<String> _genMessages = ['Extracting text from document...', 'Sending to AI...', 'Generating questions...', 'Formatting results...'];
 
@@ -58,6 +65,10 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
 
   Future<void> _generate() async {
     if (_file == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a file'), backgroundColor: AppColors.error)); return; }
+    if (_languageController.text.trim().length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid quiz language'), backgroundColor: AppColors.error));
+      return;
+    }
     setState(() { _step = 1; _generating = true; _genStage = 0; _genError = null; });
 
     final progressTimer = Stream.periodic(const Duration(milliseconds: 800), (i) => i).listen((i) {
@@ -67,6 +78,9 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
     try {
       final formData = FormData.fromMap({
         'questionCount': _questionCount,
+        'difficulty': _difficulty,
+        'learningObjective': _learningObjectiveController.text.trim(),
+        'language': _languageController.text.trim(),
         'file': await MultipartFile.fromFile(_file!.path!, filename: _file!.name),
       });
       final res = await ApiClient().dio.post('/ai-quiz/generate', data: formData,
@@ -83,6 +97,7 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
           d: map['optionD'] as String? ?? '',
           correct: AnswerOptionExt.fromString(map['correctAnswer'] as String? ?? 'A'),
           exp: map['explanation'] as String?,
+          sourceExcerpt: map['sourceExcerpt'] as String? ?? '',
         );
       }).toList();
       if (mounted) setState(() { _generating = false; _step = 2; });
@@ -96,9 +111,79 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
     }
   }
 
+  Future<void> _regenerateQuestion(_EditableQuestion question) async {
+    if (_file == null || _regeneratingQuestionIds.contains(question.id)) return;
+    setState(() => _regeneratingQuestionIds.add(question.id));
+
+    try {
+      final avoidQuestions = _questions
+          .where((candidate) => candidate.id != question.id)
+          .map((candidate) => candidate.text.text.trim())
+          .where((text) => text.isNotEmpty)
+          .toList();
+      final formData = FormData.fromMap({
+        'difficulty': _difficulty,
+        'learningObjective': _learningObjectiveController.text.trim(),
+        'language': _languageController.text.trim(),
+        'avoidQuestions': jsonEncode(avoidQuestions),
+        'file': await MultipartFile.fromFile(_file!.path!, filename: _file!.name),
+      });
+      final response = await ApiClient().dio.post(
+        '/ai-quiz/regenerate',
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 2),
+        ),
+      );
+      final generated = response.data['question'] as Map<String, dynamic>;
+      final replacement = _EditableQuestion(
+        id: question.id,
+        qText: generated['text'] as String? ?? '',
+        a: generated['optionA'] as String? ?? '',
+        b: generated['optionB'] as String? ?? '',
+        c: generated['optionC'] as String? ?? '',
+        d: generated['optionD'] as String? ?? '',
+        correct: AnswerOptionExt.fromString(
+          generated['correctAnswer'] as String? ?? 'A',
+        ),
+        exp: generated['explanation'] as String?,
+        sourceExcerpt: generated['sourceExcerpt'] as String? ?? '',
+      );
+      final index = _questions.indexWhere((candidate) => candidate.id == question.id);
+      if (!mounted || index < 0) {
+        replacement.dispose();
+        return;
+      }
+      question.dispose();
+      setState(() => _questions[index] = replacement);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(apiErrorMessage(
+              error,
+              fallback: 'Could not regenerate this question',
+            )),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _regeneratingQuestionIds.remove(question.id));
+      }
+    }
+  }
+
   Future<void> _saveQuiz() async {
     if (_subjectId == null || _topicId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please go back and select a subject and topic'), backgroundColor: AppColors.error));
+      return;
+    }
+    final validationError = _questionValidationError();
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(validationError), backgroundColor: AppColors.error));
       return;
     }
     setState(() => _saving = true);
@@ -131,10 +216,39 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
     }
   }
 
+  String? _questionValidationError() {
+    if (_questions.isEmpty) return 'Add at least one question before saving';
+
+    final seenQuestions = <String>{};
+    for (var i = 0; i < _questions.length; i++) {
+      final question = _questions[i];
+      final text = question.text.text.trim();
+      final options = [question.optA, question.optB, question.optC, question.optD]
+          .map((controller) => controller.text.trim())
+          .toList();
+      if (text.length < 5 || options.any((option) => option.isEmpty)) {
+        return 'Question ${i + 1} has an empty or incomplete field';
+      }
+      final normalizedOptions = options.map((option) => option.toLowerCase()).toSet();
+      if (normalizedOptions.length != 4) {
+        return 'Question ${i + 1} contains duplicate answer options';
+      }
+      final normalizedQuestion = text.toLowerCase();
+      if (!seenQuestions.add(normalizedQuestion)) {
+        return 'Questions must not be duplicated';
+      }
+    }
+    return null;
+  }
+
   @override
   void dispose() { for (final q in _questions) {
     q.dispose();
-  } super.dispose(); }
+  }
+    _learningObjectiveController.dispose();
+    _languageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -250,6 +364,38 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
                           );
                         }).toList(),
                       ),
+                      const SizedBox(height: 20),
+                      Text('Difficulty', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: ['easy', 'medium', 'hard', 'mixed'].map((difficulty) {
+                          final selected = difficulty == _difficulty;
+                          return ChoiceChip(
+                            label: Text('${difficulty[0].toUpperCase()}${difficulty.substring(1)}'),
+                            selected: selected,
+                            onSelected: (_) => setState(() => _difficulty = difficulty),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _learningObjectiveController,
+                        maxLength: 200,
+                        decoration: const InputDecoration(
+                          labelText: 'Learning objective (optional)',
+                          hintText: 'Example: Apply binary-search concepts',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _languageController,
+                        maxLength: 50,
+                        decoration: const InputDecoration(
+                          labelText: 'Quiz language',
+                        ),
+                      ),
                       const SizedBox(height: 28),
                       AppButton(label: 'Generate Quiz', onPressed: _generate, icon: Icons.auto_awesome),
                     ],
@@ -306,6 +452,13 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
                                     children: [
                                       Text('Q${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
                                       const Spacer(),
+                                      TextButton.icon(
+                                        onPressed: _regeneratingQuestionIds.contains(q.id) ? null : () => _regenerateQuestion(q),
+                                        icon: _regeneratingQuestionIds.contains(q.id)
+                                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                            : const Icon(Icons.refresh, size: 16),
+                                        label: const Text('Regenerate'),
+                                      ),
                                       IconButton(icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error), onPressed: () { q.dispose(); setState(() => _questions.removeAt(i)); }, padding: EdgeInsets.zero),
                                     ],
                                   ),
@@ -321,6 +474,21 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
                                       )),
                                     ],
                                   )),
+                                  if (q.sourceExcerpt.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.06),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'Source: “${q.sourceExcerpt}”',
+                                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             );

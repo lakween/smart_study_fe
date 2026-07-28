@@ -7,7 +7,6 @@ import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
 import '../../../../shared/widgets/subject_card.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/subject_provider.dart';
 
 class SubjectListScreen extends ConsumerStatefulWidget {
@@ -20,10 +19,16 @@ class SubjectListScreen extends ConsumerStatefulWidget {
 class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
   ContentVisibility? _filter;
 
+  Future<void> _openSubjectEditor(String location) async {
+    final changed = await context.push<bool>(location);
+    if (changed == true && mounted) {
+      await ref.read(subjectProvider.notifier).load();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(subjectProvider);
-    final currentUserId = ref.watch(authProvider).user?.id;
     var subjects = state.subjects;
     if (_filter != null) subjects = subjects.where((s) => s.visibility == _filter).toList();
 
@@ -61,7 +66,7 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
                         title: 'No subjects yet',
                         message: 'Create your first subject to start organizing your studies!',
                         actionLabel: 'Create Subject',
-                        onAction: () => context.push('/subjects/create'),
+                        onAction: () => _openSubjectEditor('/subjects/create'),
                       )
                     : RefreshIndicator(
                         onRefresh: () => ref.read(subjectProvider.notifier).load(),
@@ -75,9 +80,9 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
                             final s = subjects[i];
                             return SubjectCard(
                               subject: s,
-                              isOwn: s.ownerId == currentUserId,
+                              isOwn: true,
                               onTap: () => context.push('/subjects/${s.id}'),
-                              onEdit: () => context.push('/subjects/${s.id}/edit'),
+                              onEdit: () => _openSubjectEditor('/subjects/${s.id}/edit'),
                               onDelete: () async {
                                 final ok = await ConfirmDialog.show(context,
                                   title: 'Delete Subject',
@@ -94,7 +99,7 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/subjects/create'),
+        onPressed: () => _openSubjectEditor('/subjects/create'),
         icon: const Icon(Icons.add),
         label: const Text('Subject'),
       ),

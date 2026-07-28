@@ -48,22 +48,29 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
+    late final bool saved;
     if (isEditing) {
       final subject = ref.read(subjectByIdProvider(widget.subjectId!))!;
-      await ref.read(subjectProvider.notifier).updateSubject(
+      saved = await ref.read(subjectProvider.notifier).updateSubject(
         subject.copyWith(name: _nameCtrl.text.trim(), description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(), visibility: _visibility, allowCopy: _allowCopy),
       );
     } else {
-      await ref.read(subjectProvider.notifier).createSubject(
+      saved = await ref.read(subjectProvider.notifier).createSubject(
         name: _nameCtrl.text.trim(),
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         visibility: _visibility, allowCopy: _allowCopy,
       );
     }
+    if (!mounted) return;
     setState(() => _saving = false);
-    if (mounted) {
+    if (saved) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isEditing ? 'Subject updated!' : 'Subject created!'), backgroundColor: AppColors.success));
-      context.pop();
+      context.pop(true);
+    } else {
+      final message = ref.read(subjectProvider).error ?? 'Could not save the subject. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
     }
   }
 
@@ -138,8 +145,8 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
                     onPressed: () async {
                       final ok = await ConfirmDialog.show(context, title: 'Delete Subject', message: 'This will permanently delete the subject and all its content.', confirmLabel: 'Delete', isDestructive: true);
                       if (ok == true && mounted) {
-                        ref.read(subjectProvider.notifier).deleteSubject(widget.subjectId!);
-                        context.pop();
+                        final deleted = await ref.read(subjectProvider.notifier).deleteSubject(widget.subjectId!);
+                        if (deleted && mounted) context.pop(true);
                       }
                     },
                   ),

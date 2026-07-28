@@ -7,11 +7,12 @@ import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../providers/topic_provider.dart';
-import '../../../subjects/presentation/providers/subject_provider.dart';
 
 class CreateEditTopicScreen extends ConsumerStatefulWidget {
+  final String? subjectId;
   final String? topicId;
-  const CreateEditTopicScreen({super.key, this.topicId});
+  const CreateEditTopicScreen({super.key, this.subjectId, this.topicId})
+      : assert(subjectId != null || topicId != null);
 
   @override
   ConsumerState<CreateEditTopicScreen> createState() => _CreateEditTopicScreenState();
@@ -24,7 +25,6 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
   ContentVisibility _visibility = ContentVisibility.private;
   bool _allowCopy = false;
   bool _saving = false;
-  String? _selectedSubjectId;
 
   bool get isEditing => widget.topicId != null;
 
@@ -39,7 +39,7 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
         if (topic != null) {
           _nameCtrl.text = topic.name;
           _descCtrl.text = topic.description ?? '';
-          setState(() { _visibility = topic.visibility; _allowCopy = topic.allowCopy; _selectedSubjectId = topic.subjectId; });
+          setState(() { _visibility = topic.visibility; _allowCopy = topic.allowCopy; });
         }
       });
     }
@@ -51,24 +51,32 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
+    late final bool saved;
     if (isEditing) {
       final topic = ref.read(topicByIdProvider(widget.topicId!))!;
-      await ref.read(topicProvider.notifier).updateTopic(topic.copyWith(name: _nameCtrl.text.trim(), description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(), visibility: _visibility, allowCopy: _allowCopy));
+      saved = await ref.read(topicProvider.notifier).updateTopic(topic.copyWith(name: _nameCtrl.text.trim(), description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(), visibility: _visibility, allowCopy: _allowCopy));
     } else {
-      await ref.read(topicProvider.notifier).createTopic(
+      saved = await ref.read(topicProvider.notifier).createTopic(
         name: _nameCtrl.text.trim(),
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-        subjectId: _selectedSubjectId!,
+        subjectId: widget.subjectId!,
         visibility: _visibility, allowCopy: _allowCopy,
       );
     }
+    if (!mounted) return;
     setState(() => _saving = false);
-    if (mounted) { context.pop(); }
+    if (saved) {
+      context.pop(true);
+    } else {
+      final message = ref.read(topicProvider).error ?? 'Could not save the topic. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final subjects = ref.watch(subjectProvider).subjects;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -81,16 +89,6 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!isEditing)
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedSubjectId,
-                    hint: const Text('Select Subject'),
-                    decoration: InputDecoration(labelText: 'Subject', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
-                    items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
-                    onChanged: (v) => setState(() => _selectedSubjectId = v),
-                    validator: (v) => v == null ? 'Please select a subject' : null,
-                  ),
-                if (!isEditing) const SizedBox(height: 16),
                 AppTextField(label: 'Topic Name *', controller: _nameCtrl, prefixIcon: Icons.topic_outlined, validator: Validators.fullName),
                 const SizedBox(height: 16),
                 AppTextField(label: 'Description (optional)', controller: _descCtrl, maxLines: 3),

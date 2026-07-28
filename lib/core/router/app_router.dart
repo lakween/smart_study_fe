@@ -25,17 +25,18 @@ import '../../features/exams/presentation/screens/exam_attempt_screen.dart';
 import '../../features/exams/presentation/screens/exam_result_screen.dart';
 import '../../features/friends/presentation/screens/friends_list_screen.dart';
 import '../../features/friends/presentation/screens/friend_requests_screen.dart';
+import '../../features/friends/presentation/screens/find_friends_screen.dart';
 import '../../features/friends/presentation/screens/user_profile_screen.dart';
 import '../../features/profile/presentation/screens/my_profile_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
-  navigatorKey: _rootNavigatorKey,
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/splash',
   routes: [
     GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
@@ -67,12 +68,15 @@ final appRouter = GoRouter(
       builder: (_, state) => CreateEditSubjectScreen(subjectId: state.pathParameters['subjectId']),
     ),
     GoRoute(
+      path: '/subjects/:subjectId/topics/create',
+      builder: (_, state) => CreateEditTopicScreen(subjectId: state.pathParameters['subjectId']!),
+    ),
+    GoRoute(
       path: '/subjects/:subjectId/topics/:topicId',
       builder: (_, state) => TopicDetailScreen(subjectId: state.pathParameters['subjectId']!, topicId: state.pathParameters['topicId']!),
     ),
 
     // Topics
-    GoRoute(path: '/topics/create', builder: (_, __) => const CreateEditTopicScreen()),
     GoRoute(
       path: '/topics/:topicId/edit',
       builder: (_, state) => CreateEditTopicScreen(topicId: state.pathParameters['topicId']),
@@ -87,7 +91,20 @@ final appRouter = GoRouter(
 
     // Quizzes
     GoRoute(path: '/quizzes', builder: (_, __) => const QuizListScreen()),
-    GoRoute(path: '/quizzes/create', builder: (_, __) => const CreateQuizScreen()),
+    GoRoute(
+      path: '/quizzes/create',
+      builder: (_, state) {
+        final contextIds = state.extra as Map<String, String>?;
+        return CreateQuizScreen(
+          subjectId: contextIds?['subjectId'],
+          topicId: contextIds?['topicId'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/quizzes/:quizId/edit',
+      builder: (_, state) => CreateQuizScreen(quizId: state.pathParameters['quizId']!),
+    ),
     GoRoute(
       path: '/quizzes/:quizId/attempt',
       builder: (_, state) => QuizAttemptScreen(quizId: state.pathParameters['quizId']!),
@@ -113,6 +130,7 @@ final appRouter = GoRouter(
 
     // Friends
     GoRoute(path: '/friends/requests', builder: (_, __) => const FriendRequestsScreen()),
+    GoRoute(path: '/friends/find', builder: (_, __) => const FindFriendsScreen()),
     GoRoute(
       path: '/users/:userId/profile',
       builder: (_, state) => UserProfileScreen(userId: state.pathParameters['userId']!),

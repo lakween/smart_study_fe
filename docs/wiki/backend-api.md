@@ -26,9 +26,9 @@ All routes except registration, login, forgot/reset password, health, and static
 
 ## Subjects (`subjects.routes.ts`)
 
-- `GET /subjects?visibility=` -> visible subjects and viewer-specific average score.
+- `GET /subjects?visibility=` -> only the authenticated owner's subjects, optionally filtered by visibility, with viewer-specific average score.
 - `GET /subjects/:id` -> `{ subject }` after visibility authorization.
-- `POST /subjects`: `name`, optional `description`, `visibility`, `allowCopy`.
+- `POST /subjects`: normalized `name`, optional `description`, `visibility`, `allowCopy`.
 - `PATCH /subjects/:id`: owner-only partial update.
 - `DELETE /subjects/:id`: owner-only; cascades topics, documents, quizzes, exams, and dependent records.
 
@@ -36,7 +36,7 @@ All routes except registration, login, forgot/reset password, health, and static
 
 - `GET /topics?subjectId=...`: required subject ID, with quiz count and revision data.
 - `GET /topics/:id`.
-- `POST /topics`: `subjectId`, `name`, optional description, visibility, allowCopy; subject owner only.
+- `POST /topics`: `subjectId`, normalized name/description, visibility, allowCopy; subject owner only.
 - `PATCH /topics/:id`, `DELETE /topics/:id`: subject owner only.
 
 ## Documents (`documents.routes.ts`)
@@ -53,8 +53,8 @@ Uploads allow PDF/JPG/JPEG/PNG to 10 MB. Disk files receive UUID names.
 
 - `GET /quizzes?filter=mine|friends|public|ai&subjectId=&topicId=`.
 - `GET /quizzes/:id`.
-- `POST /quizzes`: title, subject/topic, visibility, allowCopy, AI flag, optional time limit, and at least one question.
-- `PATCH /quizzes/:id`: owner-only; supplied questions replace all existing questions in a transaction.
+- `POST /quizzes`: normalized title/questions, subject/topic, visibility, allowCopy, AI flag, optional 1-180 minute time limit, and at least one question. Topic/subject ownership and relationship are verified.
+- `PATCH /quizzes/:id`: owner-only; validates topic/subject integrity and replaces supplied questions in a transaction.
 - `DELETE /quizzes/:id`: owner-only.
 - `POST /quizzes/:id/attempts`: answer array and optional elapsed time; score is authoritative on the server.
 - `GET /quizzes/:id/attempts/:attemptId`: attempt owner only.
@@ -63,9 +63,10 @@ Attempt submission creates `QuestionAnswer` rows, updates `SpacedRepetition`, an
 
 ## AI quiz (`aiQuiz.routes.ts`)
 
-- `POST /ai-quiz/generate`: multipart `file` and `questionCount` (1-30).
+- `POST /ai-quiz/generate`: multipart `file`, `questionCount` (1-30), difficulty, language, and optional learning objective.
+- `POST /ai-quiz/regenerate`: regenerates one question while avoiding the other supplied question texts.
 
-PDF text is limited to 20,000 characters in the Gemini prompt. Generated JSON is normalized, but semantic quality and empty option text are not validated after generation. `GEMINI_API_KEY` is required.
+The provider selected by `AI_PROVIDER` returns structured output with supporting source excerpts. The backend validates required fields, unique options, and duplicate questions, and samples the start, middle, and end of large PDFs. OpenAI and Gemini keys/models are configured independently.
 
 ## Exams (`exams.routes.ts`)
 
@@ -80,7 +81,7 @@ Exam questions are copied randomly from the topic's quiz-question pool. Friend-e
 ## Friends (`friends.routes.ts`)
 
 - `GET /friends`: accepted friends.
-- `GET /friends/search?q=`: up to 20 users with relationship and mutual count.
+- `GET /friends/search?q=&page=&limit=`: paginated user discovery/search with relationship, mutual count, total, and `hasMore`.
 - `GET /friends/requests`: `{ received, sent }`.
 - `POST /friends/request/:userId`.
 - `POST /friends/accept/:userId`.

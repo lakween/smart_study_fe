@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/app_constants.dart';
@@ -9,6 +11,10 @@ class ApiClient {
 
   late final Dio _dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final StreamController<void> _sessionExpiredController = StreamController<void>.broadcast();
+  bool _isExpiringSession = false;
+
+  Stream<void> get sessionExpiredEvents => _sessionExpiredController.stream;
 
   void initialize() {
     _dio = Dio(BaseOptions(
@@ -27,8 +33,9 @@ class ApiClient {
         handler.next(options);
       },
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401) {
-          // TODO: Implement token refresh logic
+        final authorization = error.requestOptions.headers['Authorization'];
+        if (error.response?.statusCode == 401 && authorization is String && authorization.isNotEmpty) {
+          await expireSession();
         }
         handler.next(error);
       },
@@ -45,6 +52,7 @@ class ApiClient {
 
   Future<void> saveToken(String token) async {
     await _storage.write(key: AppConstants.tokenKey, value: token);
+    _isExpiringSession = false;
   }
 
   Future<void> clearToken() async {
@@ -53,5 +61,12 @@ class ApiClient {
 
   Future<String?> getToken() async {
     return _storage.read(key: AppConstants.tokenKey);
+  }
+
+  Future<void> expireSession() async {
+    if (_isExpiringSession) return;
+    _isExpiringSession = true;
+    await clearToken();
+    _sessionExpiredController.add(null);
   }
 }

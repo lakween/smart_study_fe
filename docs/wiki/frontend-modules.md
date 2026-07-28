@@ -10,7 +10,7 @@ Provider: `authProvider`. Model: `UserModel`.
 - `ForgotPasswordScreen`: submits email to the development reset endpoint.
 - `ShellScreen`: hosts the five-tab bottom navigation.
 
-The provider owns login, registration, session validation, password-reset request, profile update, avatar upload, and sign-out. Tokens are stored securely.
+The provider owns login, registration, session validation, password-reset request, profile update, avatar upload, and sign-out. Tokens are stored securely. Authenticated REST `401` responses and Socket.IO authentication failures trigger one centralized automatic sign-out while preserving appearance preferences.
 
 ## Dashboard and performance
 
@@ -29,14 +29,14 @@ Provider: `subjectProvider`. Model: `SubjectModel`.
 - `SubjectDetailScreen`: tabs for topics, quizzes, and documents plus owner actions.
 - `CreateEditSubjectScreen`: create/edit form for name, description, visibility, copying permission, and deletion.
 
-Creation prepends locally, updates replace by ID, and deletion removes by ID. Server visibility includes the user's own, public, and accepted-friend content.
+Creation prepends locally, updates replace by ID, and deletion removes by ID. **My Subjects** is owner-only; public and accepted-friend subjects are not mixed into this personal workspace.
 
 ## Topics
 
 Provider: `topicProvider`. Model: `TopicModel`.
 
 - `TopicDetailScreen`: topic metadata, revision information, quizzes/documents, and edit navigation.
-- `CreateEditTopicScreen`: subject-scoped create/edit form with visibility and copy permission.
+- `CreateEditTopicScreen`: subject-scoped create/edit form with visibility and copy permission. Creation receives the current subject ID and does not render a subject selector.
 
 `GET /topics` requires `subjectId`. The provider merges fetched topics by subject and exposes `topicByIdProvider` and `topicsBySubjectProvider`.
 
@@ -54,17 +54,17 @@ The provider currently loads all visible documents and filters them locally by s
 Provider: `quizProvider`. Models: `QuizModel`, `QuestionModel`, `QuizAttemptModel`.
 
 - `QuizListScreen`: filters visible quizzes and launches attempts.
-- `CreateQuizScreen`: manual questions, four options, correct answer, explanation, timing, visibility, and copying.
-- `QuizAttemptScreen`: question navigation, selected answers, timer, submission, and result navigation.
+- `CreateQuizScreen`: create/edit manual quizzes, questions, four options, correct answers, explanations, optional 1-180 minute timing, visibility, and copying. Topic-scoped creation fixes subject/topic context and hides both selectors.
+- `QuizAttemptScreen`: timed/untimed mode selection, question navigation, selected answers, countdown auto-submit for timed practice, elapsed-time tracking, submission, and result navigation.
 - `QuizResultScreen`: score, answer correctness, explanations, and revision information.
 
-Submitting an attempt creates answer rows, calculates the score server-side, updates spaced repetition, creates a notification, and refreshes quiz summary data.
+Owned quiz cards expose edit and confirmed deletion. Submitting an attempt creates answer rows, calculates the score server-side, updates spaced repetition, creates a notification, and refreshes quiz summary data.
 
 ## AI quiz
 
 - `AiQuizScreen`: selects a PDF/image and question count, uploads it to `/ai-quiz/generate`, lets the user review/edit generated questions, then saves through `quizProvider.createQuiz` with `isAiGenerated=true`.
 
-PDF input is text-extracted; image bytes go directly to Gemini. AI generation and quiz persistence are intentionally separate operations.
+PDF input is text-extracted; image bytes go directly to the server-selected OpenAI or Gemini provider. AI generation and quiz persistence are intentionally separate operations. The user can choose difficulty, language, and a learning objective, inspect source evidence, and regenerate individual questions.
 
 ## Exams
 
@@ -82,7 +82,8 @@ Questions are randomly copied from existing quiz questions for the selected topi
 Provider: `friendProvider`. Model: `FriendModel`.
 
 - `FriendsListScreen`: accepted friends, refresh, profile view, request navigation, and removal.
-- `FriendRequestsScreen`: user search plus received/sent request tabs and send/accept/decline/cancel actions.
+- `FriendRequestsScreen`: separate Received and Sent tabs with accept/decline/cancel actions.
+- `FindFriendsScreen`: paginated user discovery and debounced name/email search with initial and load-more indicators.
 - `UserProfileScreen`: other user's profile, friendship action, visible subjects, and visible quizzes.
 
 Sending and accepting requests create database notifications and emit them to the recipient's authenticated Socket.IO room. Friend-list state itself is refreshed separately from notification state.

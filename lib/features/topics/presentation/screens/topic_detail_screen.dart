@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/helpers.dart';
 import '../../../../shared/models/document_model.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/confirm_dialog.dart';
 import '../../../../shared/widgets/quiz_card.dart';
 import '../../../../shared/widgets/visibility_badge.dart';
 import '../../../documents/presentation/providers/document_provider.dart';
@@ -29,6 +30,39 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     });
   }
 
+  Future<void> _createQuiz() async {
+    final created = await context.push<bool>(
+      '/quizzes/create',
+      extra: {
+        'subjectId': widget.subjectId,
+        'topicId': widget.topicId,
+      },
+    );
+    if (created == true && mounted) {
+      await ref.read(quizProvider.notifier).load();
+    }
+  }
+
+  Future<void> _editQuiz(String quizId) async {
+    final changed = await context.push<bool>('/quizzes/$quizId/edit');
+    if (changed == true && mounted) {
+      await ref.read(quizProvider.notifier).load();
+    }
+  }
+
+  Future<void> _deleteQuiz(String quizId, String title) async {
+    final confirmed = await ConfirmDialog.show(
+      context,
+      title: 'Delete Quiz',
+      message: 'Delete "$title" and all of its questions and attempts? This cannot be undone.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (confirmed == true && mounted) {
+      await ref.read(quizProvider.notifier).deleteQuiz(quizId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final topicId = widget.topicId;
@@ -44,6 +78,11 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
         appBar: AppBar(
           title: Text(topic.name),
           actions: [
+            IconButton(
+              tooltip: 'Create quiz',
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: _createQuiz,
+            ),
             IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => context.push('/topics/$topicId/edit')),
           ],
           bottom: const TabBar(tabs: [Tab(text: 'Quizzes'), Tab(text: 'Documents')]),
@@ -95,12 +134,17 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
               child: TabBarView(
                 children: [
                   quizzes.isEmpty
-                      ? EmptyState(icon: Icons.quiz_outlined, title: 'No quizzes', message: 'Create a quiz for this topic', actionLabel: 'Create Quiz', onAction: () => context.push('/quizzes/create'))
+                      ? EmptyState(icon: Icons.quiz_outlined, title: 'No quizzes', message: 'Create a quiz for this topic', actionLabel: 'Create Quiz', onAction: _createQuiz)
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: quizzes.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (_, i) => QuizCard(quiz: quizzes[i], onPractice: () => context.push('/quizzes/${quizzes[i].id}/attempt')),
+                          itemBuilder: (_, i) => QuizCard(
+                            quiz: quizzes[i],
+                            onPractice: () => context.push('/quizzes/${quizzes[i].id}/attempt'),
+                            onEdit: () => _editQuiz(quizzes[i].id),
+                            onDelete: () => _deleteQuiz(quizzes[i].id, quizzes[i].title),
+                          ),
                         ),
                   docs.isEmpty
                       ? EmptyState(icon: Icons.folder_outlined, title: 'No documents', message: 'Upload documents for this topic', actionLabel: 'Upload', onAction: () => context.push('/documents/upload'))

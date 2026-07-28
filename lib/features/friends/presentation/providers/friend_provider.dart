@@ -10,6 +10,10 @@ class FriendState {
   final List<FriendModel> sent;
   final List<FriendModel> searchResults;
   final bool isSearching;
+  final bool isLoadingMore;
+  final bool hasMorePeople;
+  final int peoplePage;
+  final String peopleQuery;
   final String? error;
 
   const FriendState({
@@ -19,12 +23,18 @@ class FriendState {
     this.sent = const [],
     this.searchResults = const [],
     this.isSearching = false,
+    this.isLoadingMore = false,
+    this.hasMorePeople = true,
+    this.peoplePage = 0,
+    this.peopleQuery = '',
     this.error,
   });
 
   FriendState copyWith({
     bool? isLoading, List<FriendModel>? friends, List<FriendModel>? received,
-    List<FriendModel>? sent, List<FriendModel>? searchResults, bool? isSearching, String? error,
+    List<FriendModel>? sent, List<FriendModel>? searchResults, bool? isSearching,
+    bool? isLoadingMore, bool? hasMorePeople, int? peoplePage, String? peopleQuery,
+    String? error,
   }) {
     return FriendState(
       isLoading: isLoading ?? this.isLoading,
@@ -33,6 +43,10 @@ class FriendState {
       sent: sent ?? this.sent,
       searchResults: searchResults ?? this.searchResults,
       isSearching: isSearching ?? this.isSearching,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMorePeople: hasMorePeople ?? this.hasMorePeople,
+      peoplePage: peoplePage ?? this.peoplePage,
+      peopleQuery: peopleQuery ?? this.peopleQuery,
       error: error,
     );
   }
@@ -62,19 +76,37 @@ class FriendNotifier extends StateNotifier<FriendState> {
     }
   }
 
-  Future<void> search(String query) async {
-    if (query.trim().isEmpty) {
-      state = state.copyWith(searchResults: [], isSearching: false);
-      return;
-    }
-    state = state.copyWith(isSearching: true);
+  Future<void> loadPeople({String query = '', bool refresh = false}) async {
+    final normalizedQuery = query.trim();
+    if (!refresh && (state.isSearching || state.isLoadingMore || !state.hasMorePeople)) return;
+
+    final nextPage = refresh ? 1 : state.peoplePage + 1;
+    state = state.copyWith(
+      isSearching: refresh,
+      isLoadingMore: !refresh,
+      searchResults: refresh ? [] : state.searchResults,
+      peopleQuery: normalizedQuery,
+      hasMorePeople: refresh ? true : state.hasMorePeople,
+      error: null,
+    );
     try {
-      final res = await _dio.get('/friends/search', queryParameters: {'q': query});
+      final res = await _dio.get('/friends/search', queryParameters: {
+        'q': normalizedQuery,
+        'page': nextPage,
+        'limit': 20,
+      });
       final results = (res.data['users'] as List<dynamic>)
           .map((f) => FriendModel.fromJson(f as Map<String, dynamic>)).toList();
-      state = state.copyWith(isSearching: false, searchResults: results);
+      if (state.peopleQuery != normalizedQuery) return;
+      state = state.copyWith(
+        isSearching: false,
+        isLoadingMore: false,
+        searchResults: refresh ? results : [...state.searchResults, ...results],
+        peoplePage: nextPage,
+        hasMorePeople: res.data['hasMore'] as bool? ?? false,
+      );
     } catch (e) {
-      state = state.copyWith(isSearching: false, error: apiErrorMessage(e));
+      state = state.copyWith(isSearching: false, isLoadingMore: false, error: apiErrorMessage(e));
     }
   }
 
@@ -93,6 +125,11 @@ class FriendNotifier extends StateNotifier<FriendState> {
   Future<void> acceptRequest(String userId) async {
     try {
       await _dio.post('/friends/accept/$userId');
+      state = state.copyWith(
+        searchResults: state.searchResults
+            .map((f) => f.id == userId ? f.copyWith(status: FriendStatus.friends) : f)
+            .toList(),
+      );
       await load();
     } catch (e) {
       state = state.copyWith(error: apiErrorMessage(e));
@@ -120,7 +157,12 @@ class FriendNotifier extends StateNotifier<FriendState> {
   Future<void> cancelRequest(String userId) async {
     try {
       await _dio.delete('/friends/request/$userId');
-      state = state.copyWith(sent: state.sent.where((f) => f.id != userId).toList());
+      state = state.copyWith(
+        sent: state.sent.where((f) => f.id != userId).toList(),
+        searchResults: state.searchResults
+            .map((f) => f.id == userId ? f.copyWith(status: FriendStatus.none) : f)
+            .toList(),
+      );
     } catch (e) {
       state = state.copyWith(error: apiErrorMessage(e));
     }

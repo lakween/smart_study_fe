@@ -15,12 +15,13 @@
 ## Backend stack
 
 - Node.js, Express, TypeScript, Zod, Prisma, PostgreSQL.
+- Socket.IO on the same HTTP server for authenticated foreground events.
 - JWT bearer authentication; passwords use bcrypt.
 - Multer handles disk uploads and memory-only AI inputs.
-- Gemini 1.5 Flash generates quiz questions.
+- A server-side environment switch selects OpenAI Responses or Gemini for strictly structured quiz generation.
 - Central JSON errors use `{ "error": "message" }`.
 
-Required backend variables are `DATABASE_URL` and `JWT_SECRET`. Optional configuration includes `PORT`, `JWT_EXPIRES_IN`, `GEMINI_API_KEY`, `CORS_ORIGIN`, and `PUBLIC_BASE_URL`.
+Required backend variables are `DATABASE_URL` and `JWT_SECRET`. AI generation uses `AI_PROVIDER=openai|gemini` and requires the selected provider's API key. Model overrides are configured through `OPENAI_MODEL` or `GEMINI_MODEL`.
 
 ## Navigation
 
@@ -35,12 +36,12 @@ Shell tabs:
 Drill-down routes:
 
 - Subjects: `/subjects/create`, `/subjects/:subjectId`, `/subjects/:subjectId/edit`
-- Topics: `/subjects/:subjectId/topics/:topicId`, `/topics/create`, `/topics/:topicId/edit`
+- Topics: `/subjects/:subjectId/topics/create`, `/subjects/:subjectId/topics/:topicId`, `/topics/:topicId/edit`
 - Documents: `/documents/upload`, `/documents/:documentId/view`
-- Quizzes: `/quizzes`, `/quizzes/create`, `/quizzes/:quizId/attempt`, `/quizzes/:quizId/result/:attemptId`
+- Quizzes: `/quizzes`, `/quizzes/create`, `/quizzes/:quizId/edit`, `/quizzes/:quizId/attempt`, `/quizzes/:quizId/result/:attemptId`
 - AI: `/ai-quiz`
 - Exams: `/exams/create`, `/exams/:examId/attempt`, `/exams/:examId/result`
-- Social/profile: `/friends/requests`, `/users/:userId/profile`, `/profile/edit`
+- Social/profile: `/friends/requests`, `/friends/find`, `/users/:userId/profile`, `/profile/edit`
 - Utility: `/notifications`, `/dashboard`, `/settings`
 
 There is no global GoRouter redirect. Splash performs the token check and navigates to login or the dashboard.
@@ -51,6 +52,8 @@ Feature notifiers generally load in their constructors. Screens watch state and 
 
 Topic state is a merged per-subject cache. Quiz and exam state use `ensure*` methods for deep links. Exam state tracks owned IDs explicitly. Notification state loads history once through REST, then receives authenticated `notification:new` events through Socket.IO while the app is open.
 
+Nested creation preserves context: subject-to-topic creation fixes the subject ID, while topic-to-quiz creation passes fixed subject/topic IDs through GoRouter `extra`. Quiz attempts show a practice-mode screen before timing begins.
+
 ## Authentication and networking
 
 The frontend base URL is selected by `AppConstants.baseUrl`:
@@ -59,7 +62,13 @@ The frontend base URL is selected by `AppConstants.baseUrl`:
 - Android defaults to `http://10.0.2.2:4000`.
 - Web/desktop defaults to `http://localhost:4000`.
 
-Dio reads `auth_token` from secure storage before each request. A 401 refresh flow is not implemented; splash clears invalid tokens. Backend `requireAuth` verifies the JWT and sets `req.userId`.
+Dio reads `auth_token` from secure storage before each request. Refresh tokens are not implemented. An authenticated `401` clears the token once, disconnects Socket.IO, resets auth state, and redirects to login. Backend `requireAuth` verifies the JWT and confirms the user still exists before setting `req.userId`.
+
+The socket client uses the same backend origin and derives its path from the API URL. For the production API prefix `https://84.247.138.71/smart-study`, it connects with WebSocket transport at `/smart-study/socket.io`, sends the JWT in the handshake, and reconnects automatically. The backend verifies the token and database user before joining `user:<userId>`; authentication failure triggers the same automatic sign-out flow as REST.
+
+## Production deployment
+
+Backend pushes to `main` run the GitHub Actions deployment workflow. It builds a versioned release under `/opt/smart-study-backend`, reuses shared environment/uploads, applies Prisma migrations, switches the `current` symlink, restarts the systemd service, checks `/health`, and rolls back the symlink after a failed health check. Server bootstrap, GitHub secrets, restricted deploy-user permissions, and Nginx WebSocket proxying are documented in `backend/DEPLOYMENT.md`.
 
 ## Visibility and ownership
 

@@ -30,6 +30,33 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     });
   }
 
+  Future<void> _createTopic() async {
+    final created = await context.push<bool>('/subjects/${widget.subjectId}/topics/create');
+    if (created == true && mounted) {
+      await ref.read(topicProvider.notifier).loadForSubject(widget.subjectId);
+    }
+  }
+
+  Future<void> _editQuiz(String quizId) async {
+    final changed = await context.push<bool>('/quizzes/$quizId/edit');
+    if (changed == true && mounted) {
+      await ref.read(quizProvider.notifier).load();
+    }
+  }
+
+  Future<void> _deleteQuiz(String quizId, String title) async {
+    final confirmed = await ConfirmDialog.show(
+      context,
+      title: 'Delete Quiz',
+      message: 'Delete "$title" and all of its questions and attempts? This cannot be undone.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (confirmed == true && mounted) {
+      await ref.read(quizProvider.notifier).deleteQuiz(quizId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final subjectId = widget.subjectId;
@@ -115,7 +142,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               child: TabBarView(
                 children: [
                   topics.isEmpty
-                      ? EmptyState(icon: Icons.topic_outlined, title: 'No topics yet', message: 'Add topics to organize your subject content', actionLabel: 'Add Topic', onAction: () => context.push('/topics/create'))
+                      ? EmptyState(icon: Icons.topic_outlined, title: 'No topics yet', message: 'Add topics to organize your subject content', actionLabel: 'Add Topic', onAction: _createTopic)
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: topics.length,
@@ -135,6 +162,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           itemBuilder: (_, i) => QuizCard(
                             quiz: quizzes[i],
                             onPractice: () => context.push('/quizzes/${quizzes[i].id}/attempt'),
+                            onEdit: () => _editQuiz(quizzes[i].id),
+                            onDelete: () => _deleteQuiz(quizzes[i].id, quizzes[i].title),
                           ),
                         ),
                   docs.isEmpty
@@ -156,7 +185,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               heroTag: 'subject_fab',
               onPressed: () {
                 if (tab == 0) {
-                  context.push('/topics/create');
+                  _createTopic();
                 } else if (tab == 1) context.push('/quizzes/create');
                 else context.push('/documents/upload');
               },

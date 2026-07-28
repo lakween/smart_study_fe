@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/notification_model.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -15,6 +16,16 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   NotificationType? _filter;
+
+  Future<void> _openNotification(NotificationModel notification) async {
+    await ref.read(notificationProvider.notifier).markRead(notification.id);
+    if (!mounted) return;
+
+    if (notification.type == NotificationType.reminder &&
+        notification.relatedId != null) {
+      context.push('/quizzes/${notification.relatedId}/attempt');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +72,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (_, i) => NotificationTile(
                         notification: notifs[i],
-                        onTap: () => ref.read(notificationProvider.notifier).markRead(notifs[i].id),
+                        onTap: () => _openNotification(notifs[i]),
                         onDismiss: () => ref.read(notificationProvider.notifier).dismiss(notifs[i].id),
                       ),
                     ),

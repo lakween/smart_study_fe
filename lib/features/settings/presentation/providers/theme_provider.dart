@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
 
 class DarkModeNotifier extends StateNotifier<bool> {
-  DarkModeNotifier(bool initialValue) : super(initialValue);
+  DarkModeNotifier(super.initialValue);
 
   Future<void> setDarkMode(bool enabled) async {
     state = enabled;

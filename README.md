@@ -9,6 +9,17 @@ The application uses Riverpod for state, GoRouter for navigation, Dio for the
 REST API, Socket.IO for real-time in-app notifications, secure storage for
 authentication, and Material 3 light/dark themes.
 
+The personal Subjects area contains only the signed-in user's subjects. Topic
+creation inherits its subject, and quiz creation launched from a topic inherits
+both subject and topic. Owned quizzes can be edited or deleted. Quiz creators
+may configure an optional 1-180 minute limit; learners choose timed or untimed
+practice before each attempt.
+
+Dark-mode selection is stored on the device and restored before the first app
+screen is rendered. Notifications are delivered through an authenticated
+Socket.IO connection while the app is open; they are in-app events, not Android
+or iOS push notifications, so a closed app will not receive them.
+
 ## Run the application
 
 Install packages and start Flutter from this directory:
@@ -117,3 +128,6 @@ The module-wise developer wiki starts at
 [`docs/wiki/README.md`](docs/wiki/README.md). It covers frontend modules,
 backend endpoints, data models, architecture, known gaps, and the recommended
 development workflow.
+
+Production backend setup and automatic deployment are documented in
+[`../backend/DEPLOYMENT.md`](../backend/DEPLOYMENT.md).

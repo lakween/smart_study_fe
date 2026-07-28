@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/network/socket_client.dart';
 import '../../../../core/utils/helpers.dart';
 import '../../../../shared/models/quiz_model.dart';
 import '../../../../shared/widgets/quiz_card.dart';
@@ -48,6 +49,11 @@ class HomeDashboardScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+                      ValueListenableBuilder<SocketConnectionStatus>(
+                        valueListenable: SocketClient.instance.connectionStatus,
+                        builder: (_, status, __) => _SocketStatusChip(status: status),
+                      ),
+                      const SizedBox(width: 4),
                       Stack(
                         children: [
                           IconButton(
@@ -233,6 +239,51 @@ class HomeDashboardScreen extends ConsumerWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SocketStatusChip extends StatelessWidget {
+  final SocketConnectionStatus status;
+
+  const _SocketStatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      SocketConnectionStatus.connected => ('Live', AppColors.success),
+      SocketConnectionStatus.connecting => ('Connecting', AppColors.warning),
+      SocketConnectionStatus.disconnected => ('Offline', AppColors.error),
+    };
+
+    return Tooltip(
+      message: 'Real-time connection: $label',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

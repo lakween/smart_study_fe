@@ -1,6 +1,6 @@
 # Smart Study Developer Wiki
 
-This wiki describes the Flutter frontend in `my_app/` and the Express/Prisma backend in `../backend/` as reviewed on 2026-07-27. It is the starting point for future development.
+This wiki describes the Flutter frontend in `my_app/` and the Express/Prisma backend in `../backend/` as reviewed on 2026-07-28. It is the starting point for future development.
 
 ## Wiki map
 
@@ -20,8 +20,13 @@ Flutter UI
   -> Prisma
   -> PostgreSQL
 
+Backend notification service
+  -> persist notification
+  -> Socket.IO event to authenticated user room
+  -> Riverpod merges the event into visible app state
+
 Uploads -> Multer -> backend/uploads -> /uploads static URL
-AI quiz -> multipart upload -> PDF/image extraction -> Gemini -> editable questions -> quiz creation
+AI quiz -> multipart upload -> PDF/image extraction -> selected OpenAI/Gemini provider -> editable questions -> quiz creation
 ```
 
 The app is feature-first. A normal change should update the feature screen, provider, shared model, backend route/schema, serializer, and tests together.
@@ -37,6 +42,7 @@ The app is feature-first. A normal change should update the feature screen, prov
 - [Backend routes](../../../backend/src/routes/)
 - [Database schema](../../../backend/prisma/schema.prisma)
 - [Backend README](../../../backend/README.md)
+- [Production deployment](../../../backend/DEPLOYMENT.md)
 
 ## Module source map
 

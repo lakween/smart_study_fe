@@ -5,6 +5,31 @@ import '../../../../shared/models/quiz_model.dart';
 import '../../../../shared/models/question_model.dart';
 import '../../../../shared/models/user_model.dart';
 
+class QuizPracticeSession {
+  final String id;
+  final bool isTimed;
+  final DateTime startedAt;
+  final DateTime? deadlineAt;
+
+  const QuizPracticeSession({
+    required this.id,
+    required this.isTimed,
+    required this.startedAt,
+    required this.deadlineAt,
+  });
+
+  factory QuizPracticeSession.fromJson(Map<String, dynamic> json) {
+    return QuizPracticeSession(
+      id: json['id'] as String,
+      isTimed: json['mode'] == 'timed',
+      startedAt: DateTime.parse(json['startedAt'] as String),
+      deadlineAt: json['deadlineAt'] == null
+          ? null
+          : DateTime.parse(json['deadlineAt'] as String),
+    );
+  }
+}
+
 class QuizState {
   final bool isLoading;
   final List<QuizModel> quizzes;
@@ -52,7 +77,14 @@ class QuizNotifier extends StateNotifier<QuizState> {
     try {
       final res = await _dio.get('/quizzes/$quizId/attempts/$attemptId');
       final attempt = QuizAttemptModel.fromJson(res.data['attempt'] as Map<String, dynamic>);
-      state = state.copyWith(attempts: [...state.attempts, attempt]);
+      final quizJson = res.data['quiz'] as Map<String, dynamic>?;
+      final reviewedQuiz = quizJson == null ? null : QuizModel.fromJson(quizJson);
+      state = state.copyWith(
+        attempts: [...state.attempts, attempt],
+        quizzes: reviewedQuiz == null
+            ? state.quizzes
+            : state.quizzes.map((q) => q.id == quizId ? reviewedQuiz : q).toList(),
+      );
     } catch (_) {
       // Leave state.attempts as-is; callers handle the still-missing attempt.
     }
@@ -89,32 +121,92 @@ class QuizNotifier extends StateNotifier<QuizState> {
     }
   }
 
+  Future<bool> updateQuiz({
+    required String quizId,
+    required String title,
+    required String subjectId,
+    required String topicId,
+    required ContentVisibility visibility,
+    required bool allowCopy,
+    int? timeLimitMinutes,
+    required List<QuestionModel> questions,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final res = await _dio.patch('/quizzes/$quizId', data: {
+        'title': title,
+        'subjectId': subjectId,
+        'topicId': topicId,
+        'visibility': visibility.name,
+        'allowCopy': allowCopy,
+        'timeLimitMinutes': timeLimitMinutes,
+        'questions': questions.map((q) => q.toJson()).toList(),
+      });
+      final updated = QuizModel.fromJson(res.data['quiz'] as Map<String, dynamic>);
+      state = state.copyWith(
+        isLoading: false,
+        quizzes: state.quizzes.map((q) => q.id == quizId ? updated : q).toList(),
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
+      return false;
+    }
+  }
+
+  Future<bool> deleteQuiz(String quizId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _dio.delete('/quizzes/$quizId');
+      state = state.copyWith(
+        isLoading: false,
+        quizzes: state.quizzes.where((q) => q.id != quizId).toList(),
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
+      return false;
+    }
+  }
+
   Future<QuizAttemptModel?> submitAttempt({
     required String quizId,
+    required String sessionId,
     required List<AnswerOption?> answers,
-    required int? timeTakenSeconds,
   }) async {
     final quiz = state.quizzes.firstWhere((q) => q.id == quizId);
     try {
       final res = await _dio.post('/quizzes/$quizId/attempts', data: {
+        'sessionId': sessionId,
         'answers': List.generate(quiz.questions.length, (i) => {
               'questionId': quiz.questions[i].id,
               'selectedAnswer': i < answers.length ? answers[i]?.label : null,
             }),
-        'timeTakenSeconds': timeTakenSeconds,
       });
       final attempt = QuizAttemptModel.fromJson(res.data['attempt'] as Map<String, dynamic>);
-      state = state.copyWith(attempts: [attempt, ...state.attempts]);
-
-      try {
-        final quizRes = await _dio.get('/quizzes/$quizId');
-        final updatedQuiz = QuizModel.fromJson(quizRes.data['quiz'] as Map<String, dynamic>);
-        state = state.copyWith(quizzes: state.quizzes.map((q) => q.id == quizId ? updatedQuiz : q).toList());
-      } catch (_) {
-        // Non-fatal: the attempt was recorded even if refreshing the quiz summary failed.
-      }
+      final reviewedQuiz = QuizModel.fromJson(res.data['quiz'] as Map<String, dynamic>);
+      state = state.copyWith(
+        attempts: [attempt, ...state.attempts],
+        quizzes: state.quizzes.map((q) => q.id == quizId ? reviewedQuiz : q).toList(),
+      );
 
       return attempt;
+    } catch (e) {
+      state = state.copyWith(error: apiErrorMessage(e));
+      return null;
+    }
+  }
+
+  Future<QuizPracticeSession?> startAttempt({
+    required String quizId,
+    required bool timed,
+  }) async {
+    state = state.copyWith(error: null);
+    try {
+      final res = await _dio.post('/quizzes/$quizId/sessions', data: {
+        'mode': timed ? 'timed' : 'untimed',
+      });
+      return QuizPracticeSession.fromJson(res.data['session'] as Map<String, dynamic>);
     } catch (e) {
       state = state.copyWith(error: apiErrorMessage(e));
       return null;

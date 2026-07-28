@@ -32,7 +32,7 @@ lib/
 
 Features: auth, dashboard, subjects, topics, documents, quizzes, ai_quiz, exams, friends, profile, notifications, and settings.
 
-The paired backend is a separate repository at `../backend`: Express/TypeScript, Prisma/PostgreSQL, JWT authentication, Multer uploads, Gemini generation, Socket.IO, and a versioned GitHub Actions deployment workflow.
+The paired backend is a separate repository at `../backend`: Express/TypeScript, Prisma/PostgreSQL, JWT authentication, Multer uploads, environment-selected OpenAI/Gemini quiz generation, Socket.IO, and a versioned GitHub Actions deployment workflow.
 
 ## Navigation map
 
@@ -40,7 +40,7 @@ Authentication: `/splash`, `/login`, `/register`, `/forgot-password`.
 
 Shell tabs: `/home/dashboard`, `/home/subjects`, `/home/exams`, `/home/friends`, `/home/profile`.
 
-Drill-down routes include subject create/detail/edit; topic create/detail/edit; document upload/view; quiz list/create/attempt/result; AI quiz; exam create/attempt/result; friend requests and user profile; notifications, performance dashboard, settings, and profile edit.
+Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/attempt/result; friend requests, friend discovery, and user profile; notifications, performance dashboard, settings, and profile edit.
 
 Keep route parameter names aligned with screen constructor requirements. Add specific static routes before overlapping parameterized routes when route matching could be ambiguous.
 
@@ -50,7 +50,10 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 - Notifiers often load on construction; avoid duplicate network loads caused by additional screen lifecycle calls.
 - Providers retain lists and expose entity/filter selectors through `Provider.family`.
 - `notificationProvider` performs one REST history load and then consumes `notification:new` Socket.IO events. It starts/stops with authentication and merges notifications by ID and creation time; do not reintroduce periodic REST polling.
+- `ApiClient` emits a guarded session-expired event for authenticated `401` responses. `authProvider` clears authentication state and Socket.IO, while the app root redirects to login and shows the session message.
 - `examProvider` retains an `ownedExamIds` set populated from the `mine` endpoint and successful creation responses.
+- `subjectProvider` owns only the authenticated user's subjects. Nested topic/quiz creation carries parent IDs through navigation instead of asking users to select context again.
+- Quiz attempts begin with a timed/untimed mode choice. The configured 1-180 minute countdown is optional and starts only after the learner chooses timed practice.
 - `darkModeProvider` persists the user's choice and is overridden at startup with the saved value.
 - Screens render loading, error, empty, and content states and offer retry or pull-to-refresh when appropriate.
 - Forms own `TextEditingController`, selection, and validation state locally, then delegate mutations to a notifier.

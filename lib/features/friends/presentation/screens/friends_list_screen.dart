@@ -70,7 +70,7 @@ class _FriendsListScreenState extends ConsumerState<FriendsListScreen> {
             child: state.isLoading
                 ? const ListShimmer()
                 : filtered.isEmpty
-                    ? EmptyState(icon: Icons.people_outline, title: 'No friends yet', message: 'Search for people you know!', actionLabel: 'Find Friends', onAction: () => context.push('/friends/requests'))
+                    ? EmptyState(icon: Icons.people_outline, title: 'No friends yet', message: 'Find people you know and send a friend request.', actionLabel: 'Find Friends', onAction: () => context.push('/friends/find'))
                     : RefreshIndicator(
                         onRefresh: () => ref.read(friendProvider.notifier).load(),
                         child: ListView.separated(
@@ -81,7 +81,7 @@ class _FriendsListScreenState extends ConsumerState<FriendsListScreen> {
                               return Padding(
                                 padding: const EdgeInsets.all(20),
                                 child: OutlinedButton.icon(
-                                  onPressed: () => context.push('/friends/requests'),
+                                  onPressed: () => context.push('/friends/find'),
                                   icon: const Icon(Icons.person_search),
                                   label: const Text('Find Friends'),
                                   style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),

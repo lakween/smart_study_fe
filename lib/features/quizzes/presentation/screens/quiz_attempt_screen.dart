@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/question_model.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
@@ -17,12 +19,17 @@ class QuizAttemptScreen extends ConsumerStatefulWidget {
 
 class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
   int _currentIndex = 0;
-  late List<AnswerOption?> _answers;
+  List<AnswerOption?> _answers = [];
   Timer? _timer;
   int _secondsRemaining = 0;
-  int _totalSeconds = 0;
   bool _submitting = false;
-  final int _startTime = DateTime.now().millisecondsSinceEpoch;
+  bool _ready = false;
+  bool _started = false;
+  bool _timed = false;
+  bool _starting = false;
+  QuizPracticeSession? _session;
+
+  String get _draftKey => 'quiz_attempt_draft_${widget.quizId}';
 
   @override
   void initState() {
@@ -32,19 +39,123 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
       if (!mounted) return;
       final quiz = ref.read(quizByIdProvider(widget.quizId));
       if (quiz != null) {
-        _answers = List.filled(quiz.questions.length, null);
-        if (quiz.timeLimitMinutes != null) {
-          _totalSeconds = quiz.timeLimitMinutes! * 60;
-          _secondsRemaining = _totalSeconds;
-          _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-            if (_secondsRemaining <= 0) { _timer?.cancel(); _submitQuiz(); }
-            else {
-              setState(() => _secondsRemaining--);
-            }
-          });
-        }
+        setState(() {
+          _answers = List.filled(quiz.questions.length, null);
+          _ready = true;
+        });
+        await _restoreDraft(quiz.questions.length);
       }
     });
+  }
+
+  Future<void> _startAttempt({required bool timed}) async {
+    if (_starting) return;
+    setState(() => _starting = true);
+    final session = await ref.read(quizProvider.notifier).startAttempt(
+      quizId: widget.quizId,
+      timed: timed,
+    );
+    if (!mounted) return;
+    if (session == null) {
+      setState(() => _starting = false);
+      final message = ref.read(quizProvider).error ?? 'Could not start practice. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+
+    setState(() {
+      _session = session;
+      _started = true;
+      _timed = session.isTimed;
+      _starting = false;
+    });
+    await _saveDraft();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    final deadline = _session?.deadlineAt;
+    if (!_timed || deadline == null) return;
+
+    final initialRemaining = deadline.difference(DateTime.now()).inSeconds;
+    if (initialRemaining <= 0) {
+      if (mounted) setState(() => _secondsRemaining = 0);
+      _submitQuiz();
+      return;
+    }
+    if (mounted) setState(() => _secondsRemaining = initialRemaining);
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final remaining = deadline.difference(DateTime.now()).inSeconds;
+      if (remaining <= 0) {
+        timer.cancel();
+        if (mounted) setState(() => _secondsRemaining = 0);
+        _submitQuiz();
+      } else if (mounted) {
+        setState(() => _secondsRemaining = remaining);
+      }
+    });
+  }
+
+  Future<void> _saveDraft() async {
+    final session = _session;
+    if (session == null) return;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_draftKey, jsonEncode({
+      'sessionId': session.id,
+      'timed': session.isTimed,
+      'startedAt': session.startedAt.toIso8601String(),
+      'deadlineAt': session.deadlineAt?.toIso8601String(),
+      'currentIndex': _currentIndex,
+      'answers': _answers.map((answer) => answer?.label).toList(),
+    }));
+  }
+
+  Future<void> _clearDraft() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_draftKey);
+  }
+
+  Future<void> _restoreDraft(int questionCount) async {
+    final preferences = await SharedPreferences.getInstance();
+    final raw = preferences.getString(_draftKey);
+    if (raw == null || !mounted) return;
+    try {
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final answerValues = (data['answers'] as List<dynamic>? ?? const [])
+          .take(questionCount)
+          .map((value) => value == null ? null : AnswerOptionExt.fromString(value as String))
+          .toList();
+      while (answerValues.length < questionCount) {
+        answerValues.add(null);
+      }
+      final deadlineText = data['deadlineAt'] as String?;
+      final session = QuizPracticeSession(
+        id: data['sessionId'] as String,
+        isTimed: data['timed'] as bool? ?? false,
+        startedAt: DateTime.parse(data['startedAt'] as String),
+        deadlineAt: deadlineText == null ? null : DateTime.parse(deadlineText),
+      );
+      if (session.deadlineAt != null &&
+          DateTime.now().isAfter(session.deadlineAt!.add(const Duration(seconds: 30)))) {
+        await _clearDraft();
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _session = session;
+        _timed = session.isTimed;
+        _started = true;
+        _answers = answerValues;
+        _currentIndex = (data['currentIndex'] as int? ?? 0).clamp(0, questionCount - 1) as int;
+      });
+      _startTimer();
+    } catch (_) {
+      await _clearDraft();
+    }
   }
 
   @override
@@ -54,16 +165,25 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
     if (_submitting) return;
     setState(() => _submitting = true);
     _timer?.cancel();
-    final timeTaken = ((DateTime.now().millisecondsSinceEpoch - _startTime) / 1000).toInt();
+    final session = _session;
+    if (session == null) {
+      setState(() => _submitting = false);
+      return;
+    }
     final attempt = await ref.read(quizProvider.notifier).submitAttempt(
-      quizId: widget.quizId, answers: _answers, timeTakenSeconds: timeTaken,
+      quizId: widget.quizId,
+      sessionId: session.id,
+      answers: _answers,
     );
     if (!mounted) return;
     if (attempt == null) {
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not submit quiz. Please try again.'), backgroundColor: AppColors.error));
+      final message = ref.read(quizProvider).error ?? 'Could not submit quiz. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: AppColors.error));
       return;
     }
+    await _clearDraft();
+    if (!mounted) return;
     context.go('/quizzes/${widget.quizId}/result/${attempt.id}');
   }
 
@@ -73,12 +193,74 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
+  Future<void> _leavePractice() async {
+    final leave = await ConfirmDialog.show(
+      context,
+      title: 'Leave practice?',
+      message: 'Your current answers are saved on this device so you can continue later.',
+      confirmLabel: 'Leave',
+    );
+    if (leave != true || !mounted) return;
+    await _saveDraft();
+    if (!mounted) return;
+    context.go('/quizzes');
+  }
+
   @override
   Widget build(BuildContext context) {
     final quiz = ref.watch(quizByIdProvider(widget.quizId));
-    if (quiz == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (quiz == null || !_ready) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     if (_answers.length != quiz.questions.length) {
       _answers = List.filled(quiz.questions.length, null);
+    }
+
+    if (!_started) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Choose Practice Mode')),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  quiz.title,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${quiz.questionCount} questions • Choose how you want to practice',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                ),
+                const SizedBox(height: 28),
+                if (quiz.timeLimitMinutes != null) ...[
+                  _PracticeModeCard(
+                    icon: Icons.timer_outlined,
+                    color: AppColors.warning,
+                    title: 'Timed Practice',
+                    description: '${quiz.timeLimitMinutes} minute countdown. Your answers submit automatically when time expires.',
+                    buttonLabel: 'Start Timed',
+                    onPressed: _starting ? null : () => _startAttempt(timed: true),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                _PracticeModeCard(
+                  icon: Icons.all_inclusive_rounded,
+                  color: AppColors.primary,
+                  title: 'Untimed Practice',
+                  description: 'Practice at your own pace without a countdown. Elapsed time is still recorded.',
+                  buttonLabel: 'Start Untimed',
+                  onPressed: _starting ? null : () => _startAttempt(timed: false),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     final question = quiz.questions[_currentIndex];
@@ -86,9 +268,20 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
     final isLast = _currentIndex == quiz.questions.length - 1;
     final timerColor = _secondsRemaining < 300 ? AppColors.error : AppColors.textPrimary;
 
-    return Scaffold(
+    final answeredCount = _answers.where((answer) => answer != null).length;
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) _leavePractice();
+      },
+      child: Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Leave practice',
+          onPressed: _leavePractice,
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -97,7 +290,7 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
           ],
         ),
         actions: [
-          if (quiz.timeLimitMinutes != null)
+          if (_timed)
             Container(
               margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -122,6 +315,16 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
       body: Column(
         children: [
           LinearProgressIndicator(value: (_currentIndex + 1) / quiz.questions.length, backgroundColor: AppColors.divider, color: AppColors.primary),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                '$answeredCount of ${quiz.questions.length} answered',
+                style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+              ),
+            ),
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -136,7 +339,10 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: GestureDetector(
-                        onTap: () => setState(() => _answers[_currentIndex] = opt),
+                        onTap: () {
+                          setState(() => _answers[_currentIndex] = opt);
+                          _saveDraft();
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.all(16),
@@ -172,7 +378,10 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
                 if (_currentIndex > 0)
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => setState(() => _currentIndex--),
+                      onPressed: () {
+                        setState(() => _currentIndex--);
+                        _saveDraft();
+                      },
                       icon: const Icon(Icons.arrow_back, size: 18),
                       label: const Text('Previous'),
                     ),
@@ -188,7 +397,10 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
                           child: _submitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Submit Quiz'),
                         )
                       : ElevatedButton.icon(
-                          onPressed: () => setState(() => _currentIndex++),
+                          onPressed: () {
+                            setState(() => _currentIndex++);
+                            _saveDraft();
+                          },
                           icon: const Icon(Icons.arrow_forward, size: 18),
                           label: const Text('Next'),
                         ),
@@ -204,7 +416,10 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
                 final answered = _answers[i] != null;
                 final isCurrent = i == _currentIndex;
                 return GestureDetector(
-                  onTap: () => setState(() => _currentIndex = i),
+                  onTap: () {
+                    setState(() => _currentIndex = i);
+                    _saveDraft();
+                  },
                   child: Container(
                     width: 32, height: 32,
                     decoration: BoxDecoration(
@@ -215,6 +430,82 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
                   ),
                 );
               }),
+            ),
+          ),
+        ],
+      ),
+      ),
+    );
+  }
+}
+
+class _PracticeModeCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String description;
+  final String buttonLabel;
+  final VoidCallback? onPressed;
+
+  const _PracticeModeCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.description,
+    required this.buttonLabel,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCardBg : AppColors.cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+        boxShadow: isDark ? null : AppColors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 25),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textMuted,
+                  height: 1.45,
+                ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onPressed,
+              icon: Icon(icon, size: 18),
+              label: Text(buttonLabel),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(48),
+              ),
             ),
           ),
         ],

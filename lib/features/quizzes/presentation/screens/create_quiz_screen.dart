@@ -24,11 +24,28 @@ class _QuestionForm {
 
   _QuestionForm({required this.id});
 
+  factory _QuestionForm.fromQuestion(QuestionModel question) {
+    final form = _QuestionForm(id: question.id);
+    form.text.text = question.text;
+    form.optA.text = question.optionA;
+    form.optB.text = question.optionB;
+    form.optC.text = question.optionC;
+    form.optD.text = question.optionD;
+    form.explanation.text = question.explanation ?? '';
+    form.correct = question.correctAnswer;
+    return form;
+  }
+
   void dispose() { text.dispose(); optA.dispose(); optB.dispose(); optC.dispose(); optD.dispose(); explanation.dispose(); }
 }
 
 class CreateQuizScreen extends ConsumerStatefulWidget {
-  const CreateQuizScreen({super.key});
+  final String? subjectId;
+  final String? topicId;
+  final String? quizId;
+
+  const CreateQuizScreen({super.key, this.subjectId, this.topicId, this.quizId})
+      : assert(quizId != null || topicId == null || subjectId != null);
 
   @override
   ConsumerState<CreateQuizScreen> createState() => _CreateQuizScreenState();
@@ -42,7 +59,47 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
   ContentVisibility _visibility = ContentVisibility.private;
   bool _allowCopy = false;
   bool _saving = false;
+  bool _loadingQuiz = false;
   final List<_QuestionForm> _questions = [];
+
+  bool get isEditing => widget.quizId != null;
+  bool get hasFixedSubject => isEditing || widget.subjectId != null;
+  bool get hasFixedTopic => isEditing || widget.topicId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _subjectId = widget.subjectId;
+    _topicId = widget.topicId;
+    if (isEditing) {
+      _loadingQuiz = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadQuiz());
+    } else if (_subjectId != null && !hasFixedTopic) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(topicProvider.notifier).loadForSubject(_subjectId!);
+      });
+    }
+  }
+
+  Future<void> _loadQuiz() async {
+    await ref.read(quizProvider.notifier).ensureQuiz(widget.quizId!);
+    if (!mounted) return;
+    final quiz = ref.read(quizByIdProvider(widget.quizId!));
+    if (quiz == null) {
+      setState(() => _loadingQuiz = false);
+      return;
+    }
+    _titleCtrl.text = quiz.title;
+    _timeLimitCtrl.text = quiz.timeLimitMinutes?.toString() ?? '';
+    _subjectId = quiz.subjectId;
+    _topicId = quiz.topicId;
+    _visibility = quiz.visibility;
+    _allowCopy = quiz.allowCopy;
+    for (final question in quiz.questions) {
+      _questions.add(_QuestionForm.fromQuestion(question));
+    }
+    setState(() => _loadingQuiz = false);
+  }
 
   @override
   void dispose() {
@@ -67,15 +124,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
       return;
     }
     setState(() => _saving = true);
-    final ok = await ref.read(quizProvider.notifier).createQuiz(
-      title: _titleCtrl.text.trim(),
-      subjectId: _subjectId!,
-      topicId: _topicId!,
-      visibility: _visibility,
-      allowCopy: _allowCopy,
-      isAiGenerated: false,
-      timeLimitMinutes: _timeLimitCtrl.text.trim().isEmpty ? null : int.tryParse(_timeLimitCtrl.text.trim()),
-      questions: _questions.map((q) => QuestionModel(
+    final questions = _questions.map((q) => QuestionModel(
             id: q.id,
             text: q.text.text.trim(),
             optionA: q.optA.text.trim(),
@@ -84,13 +133,34 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
             optionD: q.optD.text.trim(),
             correctAnswer: q.correct,
             explanation: q.explanation.text.trim().isEmpty ? null : q.explanation.text.trim(),
-          )).toList(),
-    );
+          )).toList();
+    final timeLimit = _timeLimitCtrl.text.trim().isEmpty ? null : int.tryParse(_timeLimitCtrl.text.trim());
+    final ok = isEditing
+        ? await ref.read(quizProvider.notifier).updateQuiz(
+              quizId: widget.quizId!,
+              title: _titleCtrl.text.trim(),
+              subjectId: _subjectId!,
+              topicId: _topicId!,
+              visibility: _visibility,
+              allowCopy: _allowCopy,
+              timeLimitMinutes: timeLimit,
+              questions: questions,
+            )
+        : await ref.read(quizProvider.notifier).createQuiz(
+              title: _titleCtrl.text.trim(),
+              subjectId: _subjectId!,
+              topicId: _topicId!,
+              visibility: _visibility,
+              allowCopy: _allowCopy,
+              isAiGenerated: false,
+              timeLimitMinutes: timeLimit,
+              questions: questions,
+            );
     if (!mounted) return;
     setState(() => _saving = false);
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quiz created!'), backgroundColor: AppColors.success));
-      context.pop();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isEditing ? 'Quiz updated!' : 'Quiz created!'), backgroundColor: AppColors.success));
+      context.pop(true);
     } else {
       final error = ref.read(quizProvider).error ?? 'Could not create quiz';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: AppColors.error));
@@ -104,9 +174,11 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Quiz')),
+      appBar: AppBar(title: Text(isEditing ? 'Edit Quiz' : 'Create Quiz')),
       body: SafeArea(
-        child: Form(
+        child: _loadingQuiz
+            ? const Center(child: CircularProgressIndicator())
+            : Form(
           key: _formKey,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -115,27 +187,38 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
               children: [
                 AppTextField(label: 'Quiz Title *', controller: _titleCtrl, prefixIcon: Icons.quiz_outlined, validator: Validators.quizTitle),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _subjectId,
-                  hint: const Text('Select Subject *'),
-                  decoration: InputDecoration(labelText: 'Subject', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
-                  items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
-                  onChanged: (v) {
-                    setState(() { _subjectId = v; _topicId = null; });
-                    if (v != null) ref.read(topicProvider.notifier).loadForSubject(v);
-                  },
-                  validator: (v) => v == null ? 'Please select a subject' : null,
+                if (!hasFixedSubject) ...[
+                  DropdownButtonFormField<String>(
+                    initialValue: _subjectId,
+                    hint: const Text('Select Subject *'),
+                    decoration: InputDecoration(labelText: 'Subject', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
+                    items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                    onChanged: (v) {
+                      setState(() { _subjectId = v; _topicId = null; });
+                      if (v != null) ref.read(topicProvider.notifier).loadForSubject(v);
+                    },
+                    validator: (v) => v == null ? 'Please select a subject' : null,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (!hasFixedTopic) ...[
+                  DropdownButtonFormField<String>(
+                    initialValue: _topicId,
+                    hint: const Text('Select Topic'),
+                    decoration: InputDecoration(labelText: 'Topic', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
+                    items: topics.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name))).toList(),
+                    onChanged: (v) => setState(() => _topicId = v),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                AppTextField(
+                  label: 'Time Limit (minutes, optional)',
+                  hint: '1–180 minutes; quiz submits when time expires',
+                  controller: _timeLimitCtrl,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: Icons.timer_outlined,
+                  validator: Validators.optionalQuizTimeLimit,
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _topicId,
-                  hint: const Text('Select Topic'),
-                  decoration: InputDecoration(labelText: 'Topic', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
-                  items: topics.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name))).toList(),
-                  onChanged: (v) => setState(() => _topicId = v),
-                ),
-                const SizedBox(height: 16),
-                AppTextField(label: 'Time Limit (minutes, optional)', controller: _timeLimitCtrl, keyboardType: TextInputType.number, prefixIcon: Icons.timer_outlined),
                 const SizedBox(height: 20),
                 Text('Visibility', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 10),
@@ -193,7 +276,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
                     ])),
                   ),
                 const SizedBox(height: 24),
-                AppButton(label: 'Save Quiz', onPressed: _saving ? null : _save, isLoading: _saving),
+                AppButton(label: isEditing ? 'Save Changes' : 'Save Quiz', onPressed: _saving ? null : _save, isLoading: _saving),
               ],
             ),
           ),

@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import '../constants/app_constants.dart';
+import 'api_client.dart';
+
+enum SocketConnectionStatus { connecting, connected, disconnected }
 
 class SocketClient {
   SocketClient._();
@@ -10,6 +14,8 @@ class SocketClient {
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   io.Socket? _socket;
+  final ValueNotifier<SocketConnectionStatus> connectionStatus =
+      ValueNotifier(SocketConnectionStatus.disconnected);
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -17,9 +23,13 @@ class SocketClient {
     required void Function(Map<String, dynamic> data) onNotification,
   }) async {
     final token = await _storage.read(key: AppConstants.tokenKey);
-    if (token == null || token.isEmpty) return;
+    if (token == null || token.isEmpty) {
+      connectionStatus.value = SocketConnectionStatus.disconnected;
+      return;
+    }
 
     disconnect();
+    connectionStatus.value = SocketConnectionStatus.connecting;
 
     final socket = io.io(
       AppConstants.socketUrl,
@@ -37,14 +47,29 @@ class SocketClient {
         onNotification(Map<String, dynamic>.from(data));
       }
     });
+    socket.onConnect((_) {
+      connectionStatus.value = SocketConnectionStatus.connected;
+    });
+    socket.onDisconnect((_) {
+      connectionStatus.value = SocketConnectionStatus.disconnected;
+    });
+    socket.onConnectError((error) {
+      connectionStatus.value = SocketConnectionStatus.disconnected;
+      final message = error.toString().toLowerCase();
+      if (message.contains('authentication') ||
+          message.contains('expired token') ||
+          message.contains('session user no longer exists')) {
+        ApiClient().expireSession();
+      }
+    });
 
-    socket.connect();
     _socket = socket;
+    socket.connect();
   }
 
   void disconnect() {
     _socket?.dispose();
     _socket = null;
+    connectionStatus.value = SocketConnectionStatus.disconnected;
   }
 }
-
