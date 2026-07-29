@@ -12,12 +12,15 @@ import '../../../../shared/models/subject_model.dart';
 import '../../../../shared/models/topic_model.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/content_copy_destination_dialog.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/quiz_card.dart';
+import '../../../../shared/widgets/shared_content_context_banner.dart';
 import '../../../../shared/widgets/subject_card.dart';
 import '../providers/friend_provider.dart';
 import '../../../subjects/presentation/providers/subject_provider.dart';
 import '../../../topics/presentation/providers/topic_provider.dart';
+import '../../../quizzes/presentation/providers/quiz_provider.dart';
 
 class _ProfileData {
   final UserModel user;
@@ -145,20 +148,48 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   }
 
   Future<void> _copyTopic(TopicModel topic) async {
-    final subjectId = await _chooseSubject('Copy “${topic.name}”');
+    await ref.read(subjectProvider.notifier).load();
+    if (!mounted) return;
+    final subjects =
+        ref.read(subjectProvider).subjects.where((s) => !s.isArchived).toList();
+    if (subjects.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Create a subject before copying this topic.'),
+          action: SnackBarAction(
+            label: 'Create',
+            onPressed: () => context.push('/subjects/create'),
+          ),
+        ),
+      );
+      return;
+    }
+    final subjectId = await showTopicCopyDestinationDialog(
+      context: context,
+      topicName: topic.name,
+      subjects: subjects,
+    );
     if (subjectId == null || !mounted) return;
     try {
       await ApiClient().dio.post('/topics/${topic.id}/copy',
           data: {'targetSubjectId': subjectId});
       await ref.read(topicProvider.notifier).loadForSubject(subjectId);
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-                'Topic copied privately. You can now edit it in My Subjects.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Topic copied privately to your subject.'),
+            action: SnackBarAction(
+              label: 'Open',
+              onPressed: () => context.push('/subjects/$subjectId'),
+            ),
+          ),
+        );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+      }
     }
   }
 
@@ -198,9 +229,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 'Subject copied privately with $topics topics, $quizzes quizzes, and $documents documents.')),
       );
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+      }
     }
   }
 
@@ -210,70 +242,87 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     try {
       await ApiClient().dio.post('/documents/${document.id}/copy',
           data: {'targetSubjectId': subjectId});
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Document copied privately to your subject.')));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+      }
     }
   }
 
-  Future<void> _copyQuiz(QuizModel quiz) async {
+  Future<void> _copyQuiz(QuizModel quiz, {String? initialSubjectId}) async {
     await ref.read(subjectProvider.notifier).load();
+    if (!mounted) return;
     final subjects =
         ref.read(subjectProvider).subjects.where((s) => !s.isArchived).toList();
-    for (final subject in subjects) {
-      await ref.read(topicProvider.notifier).loadForSubject(subject.id);
+    if (subjects.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Create a subject before copying this quiz.'),
+          action: SnackBarAction(
+            label: 'Create',
+            onPressed: () => context.push('/subjects/create'),
+          ),
+        ),
+      );
+      return;
     }
+    await Future.wait(subjects.map(
+      (subject) => ref.read(topicProvider.notifier).loadForSubject(subject.id),
+    ));
     if (!mounted) return;
     final topics =
         ref.read(topicProvider).topics.where((t) => !t.isArchived).toList();
-    if (topics.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Create a topic first, then try copying again.')));
+    final destination = await showQuizCopyDestinationDialog(
+      context: context,
+      quizTitle: quiz.title,
+      subjects: subjects,
+      topics: topics,
+      initialSubjectId: initialSubjectId,
+    );
+    if (destination == null || !mounted) return;
+    if (destination.createTopic) {
+      final created = await context.push<bool>(
+        '/subjects/${destination.subjectId}/topics/create',
+      );
+      if (created == true && mounted) {
+        await ref
+            .read(topicProvider.notifier)
+            .loadForSubject(destination.subjectId);
+        if (mounted) {
+          await _copyQuiz(quiz, initialSubjectId: destination.subjectId);
+        }
+      }
       return;
     }
-    String selected = topics.first.id;
-    final targetId = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (_, setDialogState) => AlertDialog(
-          title: Text('Copy “${quiz.title}”'),
-          content: DropdownButtonFormField<String>(
-            initialValue: selected,
-            decoration: const InputDecoration(labelText: 'Save under topic'),
-            items: topics
-                .map((t) => DropdownMenuItem(value: t.id, child: Text(t.name)))
-                .toList(),
-            onChanged: (value) =>
-                setDialogState(() => selected = value ?? selected),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, selected),
-                child: const Text('Copy')),
-          ],
-        ),
-      ),
-    );
-    if (targetId == null || !mounted) return;
+    final targetTopicId = destination.topicId;
+    if (targetTopicId == null) return;
     try {
-      await ApiClient()
-          .dio
-          .post('/quizzes/${quiz.id}/copy', data: {'targetTopicId': targetId});
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content:
-                Text('Quiz copied privately. Your copy is fully editable.')));
+      await ApiClient().dio.post('/quizzes/${quiz.id}/copy',
+          data: {'targetTopicId': targetTopicId});
+      ref.invalidate(subjectQuizzesProvider(destination.subjectId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Quiz copied privately to your topic.'),
+            action: SnackBarAction(
+              label: 'Open',
+              onPressed: () => context.push(
+                '/subjects/${destination.subjectId}/topics/$targetTopicId',
+              ),
+            ),
+          ),
+        );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+      }
     }
   }
 
@@ -294,10 +343,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading)
+    if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (_error != null || _data == null)
+    }
+    if (_error != null || _data == null) {
       return Scaffold(body: Center(child: Text(_error ?? 'User not found')));
+    }
 
     final user = _data!.user;
     final publicSubjects = _data!.subjects;
@@ -319,7 +370,20 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(user.fullName),
+          toolbarHeight: 66,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(user.fullName),
+              Text(
+                'Student profile',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
           actions: [
             PopupMenuButton<String>(
               shape: RoundedRectangleBorder(
@@ -381,6 +445,16 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                         _FriendButton(
                             status: _data!.friendStatus,
                             onTap: () => _onFriendTap(_data!.friendStatus)),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: AppSpacing.pageHorizontal,
+                          child: SharedContentContextBanner(
+                            title: 'Viewing ${user.fullName}’s profile',
+                            message:
+                                'This is shared content, not My Subjects. You can view, practise, or copy permitted items into your own study space.',
+                            badgeLabel: 'Other profile',
+                          ),
+                        ),
                         const SizedBox(height: 12),
                       ],
                     ),

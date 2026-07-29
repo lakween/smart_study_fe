@@ -10,6 +10,7 @@ class QuizCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onCopy;
 
   const QuizCard({
     super.key,
@@ -18,6 +19,7 @@ class QuizCard extends StatelessWidget {
     this.onTap,
     this.onEdit,
     this.onDelete,
+    this.onCopy,
   });
 
   @override
@@ -44,36 +46,49 @@ class QuizCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(quiz.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(quiz.title,
+                          style: theme.textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
                       Text(
                         '${quiz.subjectName} › ${quiz.topicName}',
-                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: AppColors.textMuted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 if (quiz.bestScore != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: (quiz.bestScore! >= 60 ? AppColors.success : AppColors.error).withValues(alpha: 0.12),
+                      color: (quiz.bestScore! >= 60
+                              ? AppColors.success
+                              : AppColors.error)
+                          .withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '${quiz.bestScore!.toStringAsFixed(0)}%',
                       style: TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.bold,
-                        color: quiz.bestScore! >= 60 ? AppColors.success : AppColors.error,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: quiz.bestScore! >= 60
+                            ? AppColors.success
+                            : AppColors.error,
                       ),
                     ),
                   ),
                 if (onEdit != null || onDelete != null)
                   PopupMenuButton<String>(
                     padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.more_vert, color: AppColors.textMuted),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    icon:
+                        const Icon(Icons.more_vert, color: AppColors.textMuted),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     onSelected: (value) {
                       if (value == 'edit') onEdit?.call();
                       if (value == 'delete') onDelete?.call();
@@ -82,12 +97,22 @@ class QuizCard extends StatelessWidget {
                       if (onEdit != null)
                         const PopupMenuItem(
                           value: 'edit',
-                          child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('Edit quiz')]),
+                          child: Row(children: [
+                            Icon(Icons.edit_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text('Edit quiz')
+                          ]),
                         ),
                       if (onDelete != null)
                         const PopupMenuItem(
                           value: 'delete',
-                          child: Row(children: [Icon(Icons.delete_outline, size: 18, color: AppColors.error), SizedBox(width: 8), Text('Delete', style: TextStyle(color: AppColors.error))]),
+                          child: Row(children: [
+                            Icon(Icons.delete_outline,
+                                size: 18, color: AppColors.error),
+                            SizedBox(width: 8),
+                            Text('Delete',
+                                style: TextStyle(color: AppColors.error))
+                          ]),
                         ),
                     ],
                   ),
@@ -96,20 +121,29 @@ class QuizCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.help_outline, size: 14, color: AppColors.textMuted),
+                const Icon(Icons.help_outline,
+                    size: 14, color: AppColors.textMuted),
                 const SizedBox(width: 4),
-                Text('${quiz.questionCount} questions', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
+                Text('${quiz.questionCount} questions',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.textMuted)),
                 if (quiz.timeLimitMinutes != null) ...[
                   const SizedBox(width: 12),
-                  const Icon(Icons.timer_outlined, size: 14, color: AppColors.textMuted),
+                  const Icon(Icons.timer_outlined,
+                      size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 4),
-                  Text('${quiz.timeLimitMinutes}m', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
+                  Text('${quiz.timeLimitMinutes}m',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: AppColors.textMuted)),
                 ],
                 if (quiz.lastAttemptDate != null) ...[
                   const SizedBox(width: 12),
-                  const Icon(Icons.access_time, size: 14, color: AppColors.textMuted),
+                  const Icon(Icons.access_time,
+                      size: 14, color: AppColors.textMuted),
                   const SizedBox(width: 4),
-                  Text(AppHelpers.timeAgo(quiz.lastAttemptDate!), style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
+                  Text(AppHelpers.timeAgo(quiz.lastAttemptDate!),
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: AppColors.textMuted)),
                 ],
               ],
             ),
@@ -120,9 +154,11 @@ class QuizCard extends StatelessWidget {
                 if (quiz.isAiGenerated) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)]),
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)]),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
@@ -130,26 +166,41 @@ class QuizCard extends StatelessWidget {
                       children: [
                         Icon(Icons.auto_awesome, size: 11, color: Colors.white),
                         SizedBox(width: 4),
-                        Text('AI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                        Text('AI',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                       ],
                     ),
                   ),
                 ],
-                if ((onEdit != null || onDelete != null) && quiz.copiedByCount > 0) ...[
+                if ((onEdit != null || onDelete != null) &&
+                    quiz.copiedByCount > 0) ...[
                   const SizedBox(width: 8),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.people_alt_outlined, size: 14, color: AppColors.violet),
+                      const Icon(Icons.people_alt_outlined,
+                          size: 14, color: AppColors.violet),
                       const SizedBox(width: 4),
                       Text(
                         '${quiz.copiedByCount} copied',
-                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.violet, fontWeight: FontWeight.w700),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.violet,
+                            fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
                 ],
                 const Spacer(),
+                if (onCopy != null)
+                  IconButton(
+                    tooltip: 'Copy to my topic',
+                    onPressed: onCopy,
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.copy_all_outlined, size: 20),
+                  ),
                 if (onPractice != null)
                   SizedBox(
                     height: 32,
@@ -158,7 +209,8 @@ class QuizCard extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         minimumSize: Size.zero,
-                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        textStyle: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                       child: const Text('Practice'),
                     ),

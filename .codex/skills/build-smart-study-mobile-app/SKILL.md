@@ -30,6 +30,8 @@ description: Build, extend, debug, review, deploy, or test the Smart Study Flutt
 - Keep performance analytics server-authoritative and typed through `PerformanceReport`. Compare equal rolling periods, build activity from actual quiz attempts and submitted exam attempts, filter exam history by `submittedAt`, expose stored memory intervals/stages, and never invent a retention percentage. Preserve `/dashboard?section=memory` as the Home Memory Plan deep link.
 - Keep destructive actions behind confirmation and keep private/friends/public visibility and `allowCopy` rules intact.
 - Treat **My Subjects** as owner-only. `GET /subjects` returns only the authenticated user's subjects; keep cross-user discovery in explicit social/discovery flows.
+- Treat subject ownership as a hard write boundary. Never let a viewer create, upload, edit, delete, archive, or move topics, quizzes, or documents inside another user's subject or topic. In foreign content, expose only authorized view, practice, friendship, and copy-to-my-content actions. Enforce the same rule in both Flutter action visibility and backend authorization; never trust route IDs or hidden buttons alone.
+- Make social context unmistakable. A user profile and every foreign subject/topic detail view must visibly identify the owner and explain that the viewer is in shared content, not My Subjects. Keep owner-only FABs, empty-state actions, menus, and create routes absent from foreign views.
 - Preserve parent context in nested creation flows. Subject-scoped topic creation must not ask for a subject; topic-scoped quiz creation must not ask for a subject or topic.
 - Keep quiz ownership controls server-authoritative. Owned quiz cards may edit/delete; edit replaces the current question set, and deletion requires confirmation.
 - Keep practice timing server-authoritative through `QuizSession`; submit `sessionId`, never client elapsed seconds. Hide solutions from non-owners until submission and preserve resumable local answer drafts.
@@ -51,6 +53,14 @@ description: Build, extend, debug, review, deploy, or test the Smart Study Flutt
 7. Add focused tests for parsing, notifier behavior, validation, or critical widget interactions.
 
 ## Validate proportionally
+
+Before running automated checks for any ownership-aware feature, write and verify an action matrix for owner, friend, and non-friend viewers across private, friends-only, and public content. Confirm each visible action against its endpoint. At minimum, verify:
+
+- Owner: create/edit/delete/upload actions target only owned subjects and topics.
+- Friend/non-friend: no create/edit/delete/upload action appears in foreign content, including empty states, FABs, menus, and deep-linked forms.
+- Copy: source and every parent are visible, `allowCopy` is respected, the destination is owned and active, and the copy is private/editable with immutable original-creator attribution.
+- Context: profile and foreign detail screens show whose space/content is being viewed.
+- API: direct requests with guessed foreign subject/topic IDs return `403`, even when the Flutter control is hidden.
 
 Run available checks from the Flutter project root:
 
