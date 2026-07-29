@@ -25,10 +25,21 @@ class SubjectNotifier extends StateNotifier<SubjectState> {
 
   SubjectNotifier() : super(const SubjectState()) { load(); }
 
-  Future<void> load() async {
+  Future<void> load({
+    String search = '',
+    ContentVisibility? visibility,
+    bool archived = false,
+    String sort = 'updated',
+  }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final res = await _dio.get('/subjects');
+      final res = await _dio.get('/subjects', queryParameters: {
+        'search': search.trim(),
+        if (visibility != null) 'visibility': visibility.name,
+        'archived': archived,
+        'sort': sort,
+        'limit': 50,
+      });
       final subjects = (res.data['subjects'] as List<dynamic>)
           .map((s) => SubjectModel.fromJson(s as Map<String, dynamic>))
           .toList();
@@ -36,6 +47,10 @@ class SubjectNotifier extends StateNotifier<SubjectState> {
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
     }
+  }
+
+  Future<bool> setArchived(SubjectModel subject, bool archived) {
+    return updateSubject(subject.copyWith(isArchived: archived));
   }
 
   Future<bool> createSubject({

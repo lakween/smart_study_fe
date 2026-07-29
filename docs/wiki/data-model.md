@@ -10,6 +10,9 @@ Prisma uses uppercase values; serializers/mappers convert to frontend values.
 - `AnswerOption`: A, B, C, D.
 - `ExamType`: INDIVIDUAL, FRIEND_EXAM.
 - `ExamStatus`: DRAFT, SCHEDULED, STARTED, COMPLETED, CANCELLED.
+- `ExamInvitationStatus`: PENDING, ACCEPTED, DECLINED, EXPIRED.
+- `ExamAttemptStatus`: IN_PROGRESS, SUBMITTED, AUTO_SUBMITTED.
+- `ExamResultRelease`: AFTER_SUBMISSION, AFTER_CLOSE.
 - `FriendshipStatus`: PENDING, ACCEPTED, DECLINED.
 - `NotificationType`: QUIZ, EXAM, FRIEND, REMINDER, AI, GENERAL.
 
@@ -17,33 +20,35 @@ Prisma uses uppercase values; serializers/mappers convert to frontend values.
 
 ```text
 User
-├─ Subject ─┬─ Topic ─┬─ Document
-│           │         ├─ Quiz ─ Question
-│           │         └─ Exam ─ Question
-│           ├─ Document
-│           ├─ Quiz
-│           └─ Exam
-├─ QuizAttempt ─ QuestionAnswer
+├─ RefreshToken
+├─ Subject ─ Topic ─ Document / Quiz / Exam
+├─ QuizSession ─ QuizAttempt ─ QuestionAnswer
 ├─ SpacedRepetition
-├─ ExamParticipant
+├─ ExamInvitation / ExamParticipant
+├─ ExamAttempt ─ ExamAnswer
 ├─ Notification
 └─ Friendship (requester/addressee)
 ```
 
 ## Entities
 
-- `User`: authentication/profile fields, optional password reset token, ownership and participation relations.
+- `User`: authentication/profile fields, hashed expiring password-reset data, refresh sessions, ownership, attempts, and participation relations.
+- `RefreshToken`: hashed rotating session token with expiry, revocation, replacement, and user relation.
 - `Friendship`: directional requester/addressee pair with a unique directional constraint; application logic prevents reverse duplicates.
 - `Subject`: owner-controlled container with visibility and copy flag.
 - `Topic`: belongs to a subject and carries its own visibility/copy fields, though access is primarily gated through its subject.
 - `Document`: subject required, topic optional, URL/type/size metadata, owner and visibility.
 - `Quiz`: subject/topic/owner, visibility, AI flag, optional time limit, questions and attempts.
 - `Question`: belongs to either a quiz or exam by nullable foreign keys; schema does not enforce exactly one parent.
-- `QuizAttempt`: user/quiz score summary and answer rows.
+- `QuizSession`: server-authoritative timed/untimed practice start, optional deadline, and one submitted attempt.
+- `QuizAttempt`: user/quiz score summary, server-recorded duration/session relation, and answer rows.
 - `QuestionAnswer`: selected option and correctness for one attempted question.
 - `SpacedRepetition`: one row per user+quiz, with topic, score, interval, and next date.
 - `Exam`: subject/topic, organizer, type/status/timing, copied questions and participants.
 - `ExamParticipant`: unique exam+user result and completion state.
+- `ExamInvitation`: unique exam+invitee response with invitation/response timestamps.
+- `ExamAttempt`: one server-timed attempt per exam+user with stable question order and score summary.
+- `ExamAnswer`: autosaved selected option for one attempt+exam question.
 - `Notification`: user-owned message, type, read state, optional related entity ID.
 
 ## Cascade behavior
@@ -58,6 +63,6 @@ Backend serializers are the wire-format authority. They add names/counts/statist
 - Quiz attempt/best/average/revision fields.
 - Exam participant name/image/result fields.
 - User statistics.
+- Performance reports are derived response models rather than database entities. They combine completion-dated quiz/exam attempts, spaced-repetition rows, period comparisons, consistency, rankings, and recommendations.
 
 When adding a database field, update Prisma migration, route include/select, serializer, Dart model, provider, and affected UI together.
-

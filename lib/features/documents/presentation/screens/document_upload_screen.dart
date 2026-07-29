@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -78,7 +79,7 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
       appBar: AppBar(title: const Text('Upload Document')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: AppSpacing.form,
           child: Form(
             key: _formKey,
             child: Column(

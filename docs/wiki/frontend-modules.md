@@ -10,16 +10,16 @@ Provider: `authProvider`. Model: `UserModel`.
 - `ForgotPasswordScreen`: submits email to the development reset endpoint.
 - `ShellScreen`: hosts the five-tab bottom navigation.
 
-The provider owns login, registration, session validation, password-reset request, profile update, avatar upload, and sign-out. Tokens are stored securely. Authenticated REST `401` responses and Socket.IO authentication failures trigger one centralized automatic sign-out while preserving appearance preferences.
+The provider owns login, registration, session validation, password-reset request, profile update, avatar upload, and sign-out. Access and rotating refresh tokens are stored securely. Authenticated REST `401` responses share one refresh operation and retry once; only failed refresh/retry causes centralized sign-out. Socket authentication follows the same refresh-first behavior.
 
 ## Dashboard and performance
 
 Providers: `dashboardProvider`, `performanceProvider`.
 
-- `HomeDashboardScreen`: summary stats, notification badge, due revisions, recent activity, last subject/topic, and quick actions.
-- `PerformanceDashboardScreen`: all/week/month filters, summary metrics, score trend, subject/topic performance, weekly activity, revisions, insights, and exam history.
+- `HomeDashboardScreen`: summary stats, notification badge, due revisions, last subject/topic, quick actions, and a rich recent-learning section. The newest quiz result is featured with score progress, subject/topic, correctness, duration, AI origin, and timed/untimed mode; older attempts use compact contextual cards.
+- `PerformanceDashboardScreen`: premium 7-day/30-day/all-time dashboard backed by typed `PerformanceReport` models. It shows overall score and comparison, pass/activity metrics, an actionable recommendation, deep-linkable Memory & Revision details, touch-enabled score and consistency charts, navigable subject/topic rankings, completion-dated exam history, and personalized insights. `/dashboard?section=memory` scrolls directly to the memory section.
 
-Dashboard state still uses some dynamic maps. Introduce typed models before substantially expanding analytics.
+Home summary values remain a small API map, while performance analytics use typed `PerformanceReport`, summary, consistency, memory, revision, breakdown, insight, recommendation, and exam-history models.
 
 ## Subjects
 
@@ -60,6 +60,8 @@ Provider: `quizProvider`. Models: `QuizModel`, `QuestionModel`, `QuizAttemptMode
 
 Owned quiz cards expose edit and confirmed deletion. Submitting an attempt creates answer rows, calculates the score server-side, updates spaced repetition, creates a notification, and refreshes quiz summary data.
 
+Home places a compact Memory Plan between Quick Start and the Revision Queue. It shows real due/upcoming/active-plan counts and the fixed 1, 3, 7, 14, 30-day path. Revision cards show the last recall score, current interval stage, and human-readable next-review timing; Flutter displays this backend-owned schedule and does not recalculate it.
+
 ## AI quiz
 
 - `AiQuizScreen`: selects a PDF/image and question count, uploads it to `/ai-quiz/generate`, lets the user review/edit generated questions, then saves through `quizProvider.createQuiz` with `isAiGenerated=true`.
@@ -68,14 +70,15 @@ PDF input is text-extracted; image bytes go directly to the server-selected Open
 
 ## Exams
 
-Provider: `examProvider`. Models: `ExamModel`, `ExamParticipant`.
+Provider: `examProvider`. Models: `ExamModel`, `ExamParticipant`, `ExamAttemptModel`, and `ExamResultModel`.
 
-- `ExamListScreen`: My Exams and Invited tabs.
-- `CreateExamScreen`: subject/topic, individual/friend mode, duration, start time, and invited friends.
-- `ExamAttemptScreen`: ensures exam data, starts the exam, times and submits answers.
-- `ExamResultScreen`: participant/result summary.
+- `ExamListScreen`: collapsible exam dashboard with live/upcoming/action/completed totals, next-exam countdown, organizer performance, search, status filters, sorting, paginated My Exams/Invited tabs, and per-exam invitation/submission progress.
+- `CreateExamScreen`: subject/topic, individual/friend mode, duration, question count, pass mark, shuffle behavior, start time, and invited friends.
+- `ExamDetailScreen`: secure preflight, schedule/settings, invitation response, participants, organizer cancellation, and start/resume/results actions.
+- `ExamAttemptScreen`: server-clock countdown, stable question order, answer resume/autosave, guarded exit, and idempotent submission.
+- `ExamResultScreen`: pass/fail summary, conditionally released leaderboard, and solution review.
 
-Questions are randomly copied from existing quiz questions for the selected topic. An exam cannot be created for a topic without questions. Newly created and `/exams?tab=mine` IDs are tracked as owned so they appear immediately.
+Questions are snapshot-copied from existing quiz questions for the selected topic. An exam cannot be published without questions. Attempt payloads omit solutions, and friend results stay hidden until the shared close time. `exam:changed` events silently refresh list/detail state while durable notifications provide history.
 
 ## Friends and public profiles
 
@@ -117,6 +120,7 @@ Only dark mode is persisted and applied. Font size is in-memory and not applied 
 - `SubjectModel`, `TopicModel`, `DocumentModel`.
 - `QuestionModel`, `QuizModel`, `QuizAttemptModel`.
 - `ExamModel`, `ExamParticipant`.
+- `PerformanceReport` and its summary, consistency, memory, ranking, revision, insight, recommendation, and exam-history value models.
 - `FriendModel`, `NotificationModel`.
 
 Numeric parsing should continue through `num` before conversion. Dates are ISO-8601 strings. Answer labels sent to the server are uppercase A-D.

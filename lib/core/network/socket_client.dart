@@ -21,6 +21,8 @@ class SocketClient {
 
   Future<void> connect({
     required void Function(Map<String, dynamic> data) onNotification,
+    void Function(Map<String, dynamic> data)? onFriendshipChanged,
+    void Function(Map<String, dynamic> data)? onExamChanged,
   }) async {
     final token = await _storage.read(key: AppConstants.tokenKey);
     if (token == null || token.isEmpty) {
@@ -47,6 +49,16 @@ class SocketClient {
         onNotification(Map<String, dynamic>.from(data));
       }
     });
+    socket.on('friendship:changed', (data) {
+      if (data is Map && onFriendshipChanged != null) {
+        onFriendshipChanged(Map<String, dynamic>.from(data));
+      }
+    });
+    socket.on('exam:changed', (data) {
+      if (data is Map && onExamChanged != null) {
+        onExamChanged(Map<String, dynamic>.from(data));
+      }
+    });
     socket.onConnect((_) {
       connectionStatus.value = SocketConnectionStatus.connected;
     });
@@ -59,7 +71,18 @@ class SocketClient {
       if (message.contains('authentication') ||
           message.contains('expired token') ||
           message.contains('session user no longer exists')) {
-        ApiClient().expireSession();
+        () async {
+          if (await ApiClient().refreshSession()) {
+            final refreshedToken =
+                await _storage.read(key: AppConstants.tokenKey);
+            if (refreshedToken != null) {
+              socket.auth = {'token': refreshedToken};
+              socket.connect();
+              return;
+            }
+          }
+          ApiClient().expireSession();
+        }();
       }
     });
 

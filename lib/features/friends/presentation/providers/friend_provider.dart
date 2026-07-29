@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
@@ -6,6 +7,10 @@ import '../../../../shared/models/friend_model.dart';
 class FriendState {
   final bool isLoading;
   final List<FriendModel> friends;
+  final bool isLoadingMoreFriends;
+  final bool hasMoreFriends;
+  final int friendsPage;
+  final String friendsQuery;
   final List<FriendModel> received;
   final List<FriendModel> sent;
   final List<FriendModel> searchResults;
@@ -19,6 +24,10 @@ class FriendState {
   const FriendState({
     this.isLoading = false,
     this.friends = const [],
+    this.isLoadingMoreFriends = false,
+    this.hasMoreFriends = false,
+    this.friendsPage = 1,
+    this.friendsQuery = '',
     this.received = const [],
     this.sent = const [],
     this.searchResults = const [],
@@ -31,7 +40,8 @@ class FriendState {
   });
 
   FriendState copyWith({
-    bool? isLoading, List<FriendModel>? friends, List<FriendModel>? received,
+    bool? isLoading, List<FriendModel>? friends, bool? isLoadingMoreFriends,
+    bool? hasMoreFriends, int? friendsPage, String? friendsQuery, List<FriendModel>? received,
     List<FriendModel>? sent, List<FriendModel>? searchResults, bool? isSearching,
     bool? isLoadingMore, bool? hasMorePeople, int? peoplePage, String? peopleQuery,
     String? error,
@@ -39,6 +49,10 @@ class FriendState {
     return FriendState(
       isLoading: isLoading ?? this.isLoading,
       friends: friends ?? this.friends,
+      isLoadingMoreFriends: isLoadingMoreFriends ?? this.isLoadingMoreFriends,
+      hasMoreFriends: hasMoreFriends ?? this.hasMoreFriends,
+      friendsPage: friendsPage ?? this.friendsPage,
+      friendsQuery: friendsQuery ?? this.friendsQuery,
       received: received ?? this.received,
       sent: sent ?? this.sent,
       searchResults: searchResults ?? this.searchResults,
@@ -54,6 +68,7 @@ class FriendState {
 
 class FriendNotifier extends StateNotifier<FriendState> {
   final _dio = ApiClient().dio;
+  Timer? _realtimeDebounce;
 
   FriendNotifier() : super(const FriendState()) { load(); }
 
@@ -71,9 +86,80 @@ class FriendNotifier extends StateNotifier<FriendState> {
       final sent = (results[1].data['sent'] as List<dynamic>)
           .map((f) => FriendModel.fromJson(f as Map<String, dynamic>)).toList();
       state = state.copyWith(isLoading: false, friends: friends, received: received, sent: sent);
+      state = state.copyWith(
+        hasMoreFriends: results[0].data['hasMore'] as bool? ?? false,
+        friendsPage: 1,
+        friendsQuery: '',
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
     }
+  }
+
+  Future<void> loadFriends({String query = ''}) async {
+    final normalizedQuery = query.trim();
+    state = state.copyWith(isLoading: true, friendsQuery: normalizedQuery, error: null);
+    try {
+      final res = await _dio.get('/friends', queryParameters: {
+        'q': normalizedQuery,
+        'page': 1,
+        'limit': 20,
+      });
+      if (state.friendsQuery != normalizedQuery) return;
+      final friends = (res.data['friends'] as List<dynamic>)
+          .map((friend) => FriendModel.fromJson(friend as Map<String, dynamic>))
+          .toList();
+      state = state.copyWith(
+        isLoading: false,
+        friends: friends,
+        friendsPage: 1,
+        hasMoreFriends: res.data['hasMore'] as bool? ?? false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
+    }
+  }
+
+  Future<void> loadMoreFriends() async {
+    if (state.isLoading || state.isLoadingMoreFriends || !state.hasMoreFriends) return;
+    final nextPage = state.friendsPage + 1;
+    state = state.copyWith(isLoadingMoreFriends: true, error: null);
+    try {
+      final res = await _dio.get('/friends', queryParameters: {
+        'q': state.friendsQuery,
+        'page': nextPage,
+        'limit': 20,
+      });
+      final friends = (res.data['friends'] as List<dynamic>)
+          .map((friend) => FriendModel.fromJson(friend as Map<String, dynamic>))
+          .toList();
+      state = state.copyWith(
+        isLoadingMoreFriends: false,
+        friends: [...state.friends, ...friends],
+        friendsPage: nextPage,
+        hasMoreFriends: res.data['hasMore'] as bool? ?? false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMoreFriends: false, error: apiErrorMessage(e));
+    }
+  }
+
+  void handleRealtimeChange(Map<String, dynamic> _) {
+    _realtimeDebounce?.cancel();
+    _realtimeDebounce = Timer(const Duration(milliseconds: 250), () async {
+      final currentQuery = state.friendsQuery;
+      await load();
+      if (currentQuery.isNotEmpty) await loadFriends(query: currentQuery);
+      if (state.searchResults.isNotEmpty) {
+        await loadPeople(query: state.peopleQuery, refresh: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _realtimeDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> loadPeople({String query = '', bool refresh = false}) async {

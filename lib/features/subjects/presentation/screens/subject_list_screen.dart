@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
@@ -18,42 +20,105 @@ class SubjectListScreen extends ConsumerStatefulWidget {
 
 class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
   ContentVisibility? _filter;
+  bool _showArchived = false;
+  String _sort = 'updated';
+  final _searchController = TextEditingController();
+  Timer? _searchDebounce;
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _reload() {
+    ref.read(subjectProvider.notifier).load(
+      search: _searchController.text,
+      visibility: _filter,
+      archived: _showArchived,
+      sort: _sort,
+    );
+  }
+
+  void _setFilter(ContentVisibility? filter) {
+    setState(() => _filter = filter);
+    _reload();
+  }
+
+  void _search(String _) {
+    setState(() {});
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), _reload);
+  }
 
   Future<void> _openSubjectEditor(String location) async {
     final changed = await context.push<bool>(location);
     if (changed == true && mounted) {
-      await ref.read(subjectProvider.notifier).load();
+      _reload();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(subjectProvider);
-    var subjects = state.subjects;
-    if (_filter != null) subjects = subjects.where((s) => s.visibility == _filter).toList();
+    final subjects = state.subjects;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Subjects'),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.filter_list), onPressed: () {}),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort subjects',
+            onSelected: (value) {
+              setState(() => _sort = value);
+              _reload();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'updated', child: Text('Recently updated')),
+              PopupMenuItem(value: 'name', child: Text('Name')),
+              PopupMenuItem(value: 'created', child: Text('Newest')),
+            ],
+          ),
         ],
       ),
       body: Column(
         children: [
+          Padding(
+            padding: AppSpacing.search,
+            child: TextField(
+              controller: _searchController,
+              onChanged: _search,
+              decoration: InputDecoration(
+                hintText: 'Search subjects',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          _searchController.clear();
+                          _search('');
+                        },
+                      ),
+              ),
+            ),
+          ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: AppSpacing.filters,
             child: Row(
               children: [
-                _FilterChip(label: 'All', isSelected: _filter == null, onTap: () => setState(() => _filter = null)),
+                _FilterChip(label: 'All', isSelected: _filter == null && !_showArchived, onTap: () { _showArchived = false; _setFilter(null); }),
                 const SizedBox(width: 8),
-                _FilterChip(label: 'Public', isSelected: _filter == ContentVisibility.public, onTap: () => setState(() => _filter = ContentVisibility.public), color: AppColors.publicColor),
+                _FilterChip(label: 'Public', isSelected: _filter == ContentVisibility.public && !_showArchived, onTap: () { _showArchived = false; _setFilter(ContentVisibility.public); }, color: AppColors.publicColor),
                 const SizedBox(width: 8),
-                _FilterChip(label: 'Friends Only', isSelected: _filter == ContentVisibility.friendsOnly, onTap: () => setState(() => _filter = ContentVisibility.friendsOnly), color: AppColors.friendsColor),
+                _FilterChip(label: 'Friends Only', isSelected: _filter == ContentVisibility.friendsOnly && !_showArchived, onTap: () { _showArchived = false; _setFilter(ContentVisibility.friendsOnly); }, color: AppColors.friendsColor),
                 const SizedBox(width: 8),
-                _FilterChip(label: 'Private', isSelected: _filter == ContentVisibility.private, onTap: () => setState(() => _filter = ContentVisibility.private), color: AppColors.privateColor),
+                _FilterChip(label: 'Private', isSelected: _filter == ContentVisibility.private && !_showArchived, onTap: () { _showArchived = false; _setFilter(ContentVisibility.private); }, color: AppColors.privateColor),
+                const SizedBox(width: 8),
+                _FilterChip(label: 'Archived', isSelected: _showArchived, onTap: () { setState(() { _showArchived = true; _filter = null; }); _reload(); }, color: AppColors.textMuted),
               ],
             ),
           ),
@@ -69,9 +134,9 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
                         onAction: () => _openSubjectEditor('/subjects/create'),
                       )
                     : RefreshIndicator(
-                        onRefresh: () => ref.read(subjectProvider.notifier).load(),
+                        onRefresh: () async => _reload(),
                         child: GridView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppSpacing.listWithFab,
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.82,
                           ),
@@ -83,6 +148,10 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
                               isOwn: true,
                               onTap: () => context.push('/subjects/${s.id}'),
                               onEdit: () => _openSubjectEditor('/subjects/${s.id}/edit'),
+                              onArchive: () async {
+                                await ref.read(subjectProvider.notifier).setArchived(s, !s.isArchived);
+                                _reload();
+                              },
                               onDelete: () async {
                                 final ok = await ConfirmDialog.show(context,
                                   title: 'Delete Subject',

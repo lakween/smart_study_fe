@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/friend_model.dart';
 import '../../../../shared/models/quiz_model.dart';
 import '../../../../shared/models/subject_model.dart';
@@ -137,7 +138,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               publicSubjects.isEmpty
                   ? const EmptyState(icon: Icons.book_outlined, title: 'No visible subjects', message: 'This user has no subjects visible to you')
                   : GridView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.list,
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.82),
                       itemCount: publicSubjects.length,
                       itemBuilder: (_, i) => SubjectCard(subject: publicSubjects[i], isOwn: false, onTap: () => context.push('/subjects/${publicSubjects[i].id}')),
@@ -145,7 +146,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               publicQuizzes.isEmpty
                   ? const EmptyState(icon: Icons.quiz_outlined, title: 'No visible quizzes', message: 'This user has no quizzes visible to you')
                   : ListView.separated(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.list,
                       itemCount: publicQuizzes.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (_, i) => QuizCard(quiz: publicQuizzes[i], onPractice: () => context.push('/quizzes/${publicQuizzes[i].id}/attempt')),
@@ -166,7 +167,7 @@ class _Stat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: AppSpacing.pageHorizontal,
       child: Column(
         children: [
           Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

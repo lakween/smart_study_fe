@@ -32,14 +32,53 @@ class QuizPracticeSession {
 
 class QuizState {
   final bool isLoading;
+  final bool isLoadingMore;
   final List<QuizModel> quizzes;
+  final List<QuizModel> listedQuizzes;
   final List<QuizAttemptModel> attempts;
+  final String activeFilter;
+  final String search;
+  final int page;
+  final bool hasMore;
   final String? error;
 
-  const QuizState({this.isLoading = false, this.quizzes = const [], this.attempts = const [], this.error});
+  const QuizState({
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.quizzes = const [],
+    this.listedQuizzes = const [],
+    this.attempts = const [],
+    this.activeFilter = 'mine',
+    this.search = '',
+    this.page = 1,
+    this.hasMore = false,
+    this.error,
+  });
 
-  QuizState copyWith({bool? isLoading, List<QuizModel>? quizzes, List<QuizAttemptModel>? attempts, String? error}) {
-    return QuizState(isLoading: isLoading ?? this.isLoading, quizzes: quizzes ?? this.quizzes, attempts: attempts ?? this.attempts, error: error);
+  QuizState copyWith({
+    bool? isLoading,
+    bool? isLoadingMore,
+    List<QuizModel>? quizzes,
+    List<QuizModel>? listedQuizzes,
+    List<QuizAttemptModel>? attempts,
+    String? activeFilter,
+    String? search,
+    int? page,
+    bool? hasMore,
+    String? error,
+  }) {
+    return QuizState(
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      quizzes: quizzes ?? this.quizzes,
+      listedQuizzes: listedQuizzes ?? this.listedQuizzes,
+      attempts: attempts ?? this.attempts,
+      activeFilter: activeFilter ?? this.activeFilter,
+      search: search ?? this.search,
+      page: page ?? this.page,
+      hasMore: hasMore ?? this.hasMore,
+      error: error,
+    );
   }
 }
 
@@ -48,16 +87,65 @@ class QuizNotifier extends StateNotifier<QuizState> {
 
   QuizNotifier() : super(const QuizState()) { load(); }
 
-  Future<void> load() async {
+  List<QuizModel> _mergeQuizzes(List<QuizModel> current, List<QuizModel> incoming) {
+    final byId = {for (final quiz in current) quiz.id: quiz};
+    for (final quiz in incoming) {
+      byId[quiz.id] = quiz;
+    }
+    return byId.values.toList();
+  }
+
+  Future<void> load({String filter = 'mine', String search = ''}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final res = await _dio.get('/quizzes');
+      final res = await _dio.get('/quizzes', queryParameters: {
+        'filter': filter,
+        'search': search.trim(),
+        'page': 1,
+        'limit': 20,
+      });
       final quizzes = (res.data['quizzes'] as List<dynamic>)
           .map((q) => QuizModel.fromJson(q as Map<String, dynamic>))
           .toList();
-      state = state.copyWith(isLoading: false, quizzes: quizzes);
+      final pagination = res.data['pagination'] as Map<String, dynamic>?;
+      state = state.copyWith(
+        isLoading: false,
+        quizzes: _mergeQuizzes(state.quizzes, quizzes),
+        listedQuizzes: quizzes,
+        activeFilter: filter,
+        search: search.trim(),
+        page: 1,
+        hasMore: pagination?['hasMore'] as bool? ?? false,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (state.isLoading || state.isLoadingMore || !state.hasMore) return;
+    final nextPage = state.page + 1;
+    state = state.copyWith(isLoadingMore: true, error: null);
+    try {
+      final res = await _dio.get('/quizzes', queryParameters: {
+        'filter': state.activeFilter,
+        'search': state.search,
+        'page': nextPage,
+        'limit': 20,
+      });
+      final quizzes = (res.data['quizzes'] as List<dynamic>)
+          .map((q) => QuizModel.fromJson(q as Map<String, dynamic>))
+          .toList();
+      final pagination = res.data['pagination'] as Map<String, dynamic>?;
+      state = state.copyWith(
+        isLoadingMore: false,
+        quizzes: _mergeQuizzes(state.quizzes, quizzes),
+        listedQuizzes: [...state.listedQuizzes, ...quizzes],
+        page: nextPage,
+        hasMore: pagination?['hasMore'] as bool? ?? false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: apiErrorMessage(e));
     }
   }
 
@@ -113,7 +201,13 @@ class QuizNotifier extends StateNotifier<QuizState> {
         'questions': questions.map((q) => q.toJson()).toList(),
       });
       final quiz = QuizModel.fromJson(res.data['quiz'] as Map<String, dynamic>);
-      state = state.copyWith(isLoading: false, quizzes: [quiz, ...state.quizzes]);
+      state = state.copyWith(
+        isLoading: false,
+        quizzes: [quiz, ...state.quizzes],
+        listedQuizzes: state.activeFilter == 'mine'
+            ? [quiz, ...state.listedQuizzes]
+            : state.listedQuizzes,
+      );
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
@@ -146,6 +240,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
       state = state.copyWith(
         isLoading: false,
         quizzes: state.quizzes.map((q) => q.id == quizId ? updated : q).toList(),
+        listedQuizzes: state.listedQuizzes.map((q) => q.id == quizId ? updated : q).toList(),
       );
       return true;
     } catch (e) {
@@ -161,6 +256,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
       state = state.copyWith(
         isLoading: false,
         quizzes: state.quizzes.where((q) => q.id != quizId).toList(),
+        listedQuizzes: state.listedQuizzes.where((q) => q.id != quizId).toList(),
       );
       return true;
     } catch (e) {
@@ -188,6 +284,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
       state = state.copyWith(
         attempts: [attempt, ...state.attempts],
         quizzes: state.quizzes.map((q) => q.id == quizId ? reviewedQuiz : q).toList(),
+        listedQuizzes: state.listedQuizzes.map((q) => q.id == quizId ? reviewedQuiz : q).toList(),
       );
 
       return attempt;

@@ -15,14 +15,15 @@ class AppCard extends StatelessWidget {
     this.padding,
     this.margin,
     this.onTap,
-    this.borderRadius = 16,
+    this.borderRadius = 22,
     this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = color ?? (isDark ? AppColors.darkCardBg : AppColors.cardBg);
+    final cardColor =
+        color ?? (isDark ? AppColors.darkCardBg : AppColors.cardBg);
 
     return Container(
       margin: margin,
@@ -30,6 +31,9 @@ class AppCard extends StatelessWidget {
         color: cardColor,
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: isDark ? [] : AppColors.cardShadow,
+        border: Border.all(
+          color: isDark ? AppColors.darkDivider : AppColors.divider,
+        ),
       ),
       child: onTap != null
           ? Material(

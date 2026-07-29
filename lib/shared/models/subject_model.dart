@@ -7,6 +7,7 @@ class SubjectModel extends Equatable {
   final String? description;
   final ContentVisibility visibility;
   final bool allowCopy;
+  final bool isArchived;
   final String ownerId;
   final String? ownerName;
   final String? ownerImageUrl;
@@ -22,6 +23,7 @@ class SubjectModel extends Equatable {
     this.description,
     required this.visibility,
     required this.allowCopy,
+    this.isArchived = false,
     required this.ownerId,
     this.ownerName,
     this.ownerImageUrl,
@@ -39,6 +41,7 @@ class SubjectModel extends Equatable {
       description: json['description'] as String?,
       visibility: ContentVisibilityExt.fromString(json['visibility'] as String? ?? 'private'),
       allowCopy: json['allowCopy'] as bool? ?? false,
+      isArchived: json['isArchived'] as bool? ?? false,
       ownerId: json['ownerId'] as String,
       ownerName: json['ownerName'] as String?,
       ownerImageUrl: json['ownerImageUrl'] as String?,
@@ -56,12 +59,13 @@ class SubjectModel extends Equatable {
       'description': description,
       'visibility': visibility.name,
       'allowCopy': allowCopy,
+      'isArchived': isArchived,
     };
   }
 
   SubjectModel copyWith({
     String? id, String? name, String? description,
-    ContentVisibility? visibility, bool? allowCopy, String? ownerId,
+    ContentVisibility? visibility, bool? allowCopy, bool? isArchived, String? ownerId,
     String? ownerName, String? ownerImageUrl,
     int? topicCount, int? quizCount, double? avgScore,
     DateTime? createdAt, DateTime? updatedAt,
@@ -72,6 +76,7 @@ class SubjectModel extends Equatable {
       description: description ?? this.description,
       visibility: visibility ?? this.visibility,
       allowCopy: allowCopy ?? this.allowCopy,
+      isArchived: isArchived ?? this.isArchived,
       ownerId: ownerId ?? this.ownerId,
       ownerName: ownerName ?? this.ownerName,
       ownerImageUrl: ownerImageUrl ?? this.ownerImageUrl,
@@ -84,6 +89,6 @@ class SubjectModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, description, visibility, allowCopy,
+  List<Object?> get props => [id, name, description, visibility, allowCopy, isArchived,
     ownerId, topicCount, quizCount, avgScore, createdAt, updatedAt];
 }

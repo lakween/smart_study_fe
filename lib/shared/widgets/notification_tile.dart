@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/utils/helpers.dart';
 import '../../shared/models/notification_model.dart';
 
@@ -43,14 +44,17 @@ class NotificationTile extends StatelessWidget {
       onDismissed: (_) => onDismiss?.call(),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.only(right: AppSpacing.pageGutter),
         color: AppColors.error,
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.pageGutter,
+            vertical: 12,
+          ),
           color: notification.isRead
               ? Colors.transparent
               : (isDark ? AppColors.primary.withValues(alpha: 0.08) : AppColors.primary.withValues(alpha: 0.04)),

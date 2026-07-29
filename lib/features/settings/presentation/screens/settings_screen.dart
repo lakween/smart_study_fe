@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
@@ -192,7 +193,12 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.pageGutter,
+      20,
+      AppSpacing.pageGutter,
+      8,
+    ),
     child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary, letterSpacing: 0.5)),
   );
 }

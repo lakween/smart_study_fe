@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../shared/models/friend_model.dart';
 import 'avatar_widget.dart';
 
@@ -28,7 +29,10 @@ class FriendTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.pageGutter,
+        vertical: 6,
+      ),
       child: Row(
         children: [
           AvatarWidget(name: friend.fullName, imageUrl: friend.profileImageUrl, radius: 24),

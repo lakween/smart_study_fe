@@ -1,11 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/quiz_card.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/quiz_provider.dart';
 
 class QuizListScreen extends ConsumerStatefulWidget {
@@ -16,43 +17,91 @@ class QuizListScreen extends ConsumerStatefulWidget {
 }
 
 class _QuizListScreenState extends ConsumerState<QuizListScreen> {
-  String _filter = 'all';
+  String _filter = 'mine';
+  final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  Timer? _searchDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 240) {
+        ref.read(quizProvider.notifier).loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _selectFilter(String filter) {
+    setState(() => _filter = filter);
+    ref.read(quizProvider.notifier).load(
+      filter: filter,
+      search: _searchController.text,
+    );
+  }
+
+  void _search(String value) {
+    if (mounted) setState(() {});
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      ref.read(quizProvider.notifier).load(filter: _filter, search: value);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(quizProvider);
-    final currentUserId = ref.watch(authProvider).user?.id;
-    var quizzes = state.quizzes;
-    if (_filter == 'mine') {
-      quizzes = quizzes.where((q) => q.ownerId == currentUserId).toList();
-    } else if (_filter == 'friends') {
-      quizzes = quizzes.where((q) => q.ownerId != currentUserId).toList();
-    } else if (_filter == 'ai') {
-      quizzes = quizzes.where((q) => q.isAiGenerated).toList();
-    }
+    final quizzes = state.listedQuizzes;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quizzes'),
-        actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.filter_list), onPressed: () {}),
-        ],
       ),
       body: Column(
         children: [
+          Padding(
+            padding: AppSpacing.search,
+            child: TextField(
+              controller: _searchController,
+              onChanged: _search,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search quizzes',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                          _search('');
+                        },
+                      ),
+              ),
+            ),
+          ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: AppSpacing.filters,
             child: Row(
               children: [
-                _Chip(label: 'All', value: 'all', selected: _filter, onTap: (v) => setState(() => _filter = v)),
+                _Chip(label: 'My Quizzes', value: 'mine', selected: _filter, onTap: _selectFilter),
                 const SizedBox(width: 8),
-                _Chip(label: 'My Quizzes', value: 'mine', selected: _filter, onTap: (v) => setState(() => _filter = v)),
+                _Chip(label: "Friends'", value: 'friends', selected: _filter, onTap: _selectFilter),
                 const SizedBox(width: 8),
-                _Chip(label: "Friends'", value: 'friends', selected: _filter, onTap: (v) => setState(() => _filter = v)),
+                _Chip(label: 'Public', value: 'public', selected: _filter, onTap: _selectFilter),
                 const SizedBox(width: 8),
-                _Chip(label: 'AI Generated', value: 'ai', selected: _filter, onTap: (v) => setState(() => _filter = v)),
+                _Chip(label: 'AI Generated', value: 'ai', selected: _filter, onTap: _selectFilter),
               ],
             ),
           ),
@@ -60,18 +109,37 @@ class _QuizListScreenState extends ConsumerState<QuizListScreen> {
             child: state.isLoading
                 ? const ListShimmer()
                 : quizzes.isEmpty
-                    ? EmptyState(icon: Icons.quiz_outlined, title: 'No quizzes found', message: 'Create your first quiz or discover public quizzes', actionLabel: 'Create Quiz', onAction: () => context.push('/quizzes/create'))
+                    ? EmptyState(
+                        icon: Icons.quiz_outlined,
+                        title: 'No quizzes found',
+                        message: _filter == 'mine'
+                            ? 'Create your first quiz to start practicing.'
+                            : 'Try another category or search phrase.',
+                        actionLabel: _filter == 'mine' ? 'Create Quiz' : null,
+                        onAction: _filter == 'mine' ? () => context.push('/quizzes/create') : null,
+                      )
                     : RefreshIndicator(
-                        onRefresh: () => ref.read(quizProvider.notifier).load(),
+                        onRefresh: () => ref.read(quizProvider.notifier).load(
+                          filter: _filter,
+                          search: _searchController.text,
+                        ),
                         child: ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: quizzes.length,
+                          controller: _scrollController,
+                          padding: AppSpacing.listWithFab,
+                          itemCount: quizzes.length + (state.isLoadingMore ? 1 : 0),
                           separatorBuilder: (_, __) => const SizedBox(height: 12),
-                          itemBuilder: (_, i) => QuizCard(
-                            quiz: quizzes[i],
-                            onTap: () {},
-                            onPractice: () => context.push('/quizzes/${quizzes[i].id}/attempt'),
-                          ),
+                          itemBuilder: (_, i) {
+                            if (i == quizzes.length) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            return QuizCard(
+                              quiz: quizzes[i],
+                              onPractice: () => context.push('/quizzes/${quizzes[i].id}/attempt'),
+                            );
+                          },
                         ),
                       ),
           ),

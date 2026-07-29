@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/document_model.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -76,7 +77,7 @@ class MyProfileScreen extends ConsumerWidget {
                           Text(user.university!, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
                         const SizedBox(height: 16),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: AppSpacing.pageHorizontal,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
@@ -89,7 +90,7 @@ class MyProfileScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: AppSpacing.pageHorizontal,
                           child: ElevatedButton(
                             onPressed: () => context.push('/profile/edit'),
                             style: ElevatedButton.styleFrom(minimumSize: const Size(200, 40)),
@@ -110,7 +111,7 @@ class MyProfileScreen extends ConsumerWidget {
               mySubjects.isEmpty
                   ? EmptyState(icon: Icons.book_outlined, title: 'No subjects', message: 'Create your first subject', actionLabel: 'Create', onAction: () => context.push('/subjects/create'))
                   : GridView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.list,
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.82),
                       itemCount: mySubjects.length,
                       itemBuilder: (_, i) => SubjectCard(subject: mySubjects[i], onTap: () => context.push('/subjects/${mySubjects[i].id}')),
@@ -118,7 +119,7 @@ class MyProfileScreen extends ConsumerWidget {
               myQuizzes.isEmpty
                   ? const EmptyState(icon: Icons.quiz_outlined, title: 'No quizzes', message: 'Create your first quiz')
                   : ListView.separated(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.list,
                       itemCount: myQuizzes.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (_, i) => QuizCard(quiz: myQuizzes[i], onPractice: () => context.push('/quizzes/${myQuizzes[i].id}/attempt')),
@@ -126,7 +127,7 @@ class MyProfileScreen extends ConsumerWidget {
               myDocuments.isEmpty
                   ? EmptyState(icon: Icons.folder_outlined, title: 'No documents', message: 'Upload your first document', actionLabel: 'Upload', onAction: () => context.push('/documents/upload'))
                   : ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.list,
                       itemCount: myDocuments.length,
                       itemBuilder: (_, i) => ListTile(
                         leading: const Icon(Icons.attach_file, color: AppColors.primary),

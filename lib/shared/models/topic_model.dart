@@ -8,6 +8,7 @@ class TopicModel extends Equatable {
   final String? description;
   final ContentVisibility visibility;
   final bool allowCopy;
+  final bool isArchived;
   final int quizCount;
   final double? lastScore;
   final DateTime? nextRevisionDate;
@@ -20,6 +21,7 @@ class TopicModel extends Equatable {
     this.description,
     required this.visibility,
     required this.allowCopy,
+    this.isArchived = false,
     this.quizCount = 0,
     this.lastScore,
     this.nextRevisionDate,
@@ -34,6 +36,7 @@ class TopicModel extends Equatable {
       description: json['description'] as String?,
       visibility: ContentVisibilityExt.fromString(json['visibility'] as String? ?? 'private'),
       allowCopy: json['allowCopy'] as bool? ?? false,
+      isArchived: json['isArchived'] as bool? ?? false,
       quizCount: (json['quizCount'] as num?)?.toInt() ?? 0,
       lastScore: (json['lastScore'] as num?)?.toDouble(),
       nextRevisionDate: json['nextRevisionDate'] != null ? DateTime.parse(json['nextRevisionDate'] as String) : null,
@@ -48,12 +51,13 @@ class TopicModel extends Equatable {
       'description': description,
       'visibility': visibility.name,
       'allowCopy': allowCopy,
+      'isArchived': isArchived,
     };
   }
 
   TopicModel copyWith({
     String? id, String? subjectId, String? name, String? description,
-    ContentVisibility? visibility, bool? allowCopy, int? quizCount,
+    ContentVisibility? visibility, bool? allowCopy, bool? isArchived, int? quizCount,
     double? lastScore, DateTime? nextRevisionDate, DateTime? createdAt,
   }) {
     return TopicModel(
@@ -63,6 +67,7 @@ class TopicModel extends Equatable {
       description: description ?? this.description,
       visibility: visibility ?? this.visibility,
       allowCopy: allowCopy ?? this.allowCopy,
+      isArchived: isArchived ?? this.isArchived,
       quizCount: quizCount ?? this.quizCount,
       lastScore: lastScore ?? this.lastScore,
       nextRevisionDate: nextRevisionDate ?? this.nextRevisionDate,
@@ -72,5 +77,5 @@ class TopicModel extends Equatable {
 
   @override
   List<Object?> get props => [id, subjectId, name, description, visibility,
-    allowCopy, quizCount, lastScore, nextRevisionDate, createdAt];
+    allowCopy, isArchived, quizCount, lastScore, nextRevisionDate, createdAt];
 }

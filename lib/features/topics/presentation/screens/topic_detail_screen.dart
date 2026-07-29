@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/helpers.dart';
 import '../../../../shared/models/document_model.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -90,7 +91,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.page,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -136,7 +137,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                   quizzes.isEmpty
                       ? EmptyState(icon: Icons.quiz_outlined, title: 'No quizzes', message: 'Create a quiz for this topic', actionLabel: 'Create Quiz', onAction: _createQuiz)
                       : ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppSpacing.list,
                           itemCount: quizzes.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (_, i) => QuizCard(
@@ -149,7 +150,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                   docs.isEmpty
                       ? EmptyState(icon: Icons.folder_outlined, title: 'No documents', message: 'Upload documents for this topic', actionLabel: 'Upload', onAction: () => context.push('/documents/upload'))
                       : ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppSpacing.list,
                           itemCount: docs.length,
                           itemBuilder: (_, i) => ListTile(
                             leading: const Icon(Icons.attach_file, color: AppColors.primary),

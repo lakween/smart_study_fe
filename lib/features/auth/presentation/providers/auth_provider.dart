@@ -59,7 +59,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(user: user, isAuthenticated: true);
       return true;
     } catch (_) {
-      await _storage.delete(key: AppConstants.tokenKey);
+      await ApiClient().clearToken();
       return false;
     }
   }
@@ -69,8 +69,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final res = await _dio.post('/auth/login', data: {'email': email, 'password': password});
       final token = res.data['token'] as String;
+      final refreshToken = res.data['refreshToken'] as String;
       final user = UserModel.fromJson(res.data['user'] as Map<String, dynamic>);
-      await ApiClient().saveToken(token);
+      await ApiClient().saveSession(token, refreshToken);
       state = state.copyWith(isLoading: false, user: user, isAuthenticated: true);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiErrorMessage(e, fallback: 'Invalid email or password'));
@@ -94,8 +95,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'studyLevel': studyLevel.name,
       });
       final token = res.data['token'] as String;
+      final refreshToken = res.data['refreshToken'] as String;
       final user = UserModel.fromJson(res.data['user'] as Map<String, dynamic>);
-      await ApiClient().saveToken(token);
+      await ApiClient().saveSession(token, refreshToken);
       state = state.copyWith(isLoading: false, user: user, isAuthenticated: true);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiErrorMessage(e, fallback: 'Could not create your account'));
@@ -155,6 +157,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
+    await ApiClient().revokeSession();
     await ApiClient().clearToken();
     SocketClient.instance.disconnect();
     state = const AuthState();

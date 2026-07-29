@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -81,7 +82,7 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
       appBar: AppBar(title: Text(isEditing ? 'Edit Subject' : 'Create Subject')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: AppSpacing.form,
           child: Form(
             key: _formKey,
             child: Column(
@@ -144,9 +145,9 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
                     variant: AppButtonVariant.outlined,
                     onPressed: () async {
                       final ok = await ConfirmDialog.show(context, title: 'Delete Subject', message: 'This will permanently delete the subject and all its content.', confirmLabel: 'Delete', isDestructive: true);
-                      if (ok == true && mounted) {
+                      if (ok == true && context.mounted) {
                         final deleted = await ref.read(subjectProvider.notifier).deleteSubject(widget.subjectId!);
-                        if (deleted && mounted) context.pop(true);
+                        if (deleted && context.mounted) context.pop(true);
                       }
                     },
                   ),

@@ -20,6 +20,16 @@ screen is rendered. Notifications are delivered through an authenticated
 Socket.IO connection while the app is open; they are in-app events, not Android
 or iOS push notifications, so a closed app will not receive them.
 
+Authentication uses short-lived JWT access tokens plus rotating refresh
+sessions stored in secure storage. Quiz practice is started on the server;
+timed deadlines and elapsed time are server-authoritative, while an in-progress
+answer draft is saved locally so practice can resume after navigation or an app
+restart. Answer keys are returned to non-owners only after submission.
+
+Quiz, friend, and notification lists load incrementally. Subjects support
+search, sorting, visibility filters, and archive/restore. Friendship changes
+arrive live through Socket.IO in addition to durable notification history.
+
 ## Run the application
 
 Install packages and start Flutter from this directory:
@@ -69,18 +79,24 @@ Example:
 
 ### Home
 
-Open the **Home** tab and look for the **Due for Revision** section. It shows
-the five nearest quizzes whose revision date is due within the next three days,
-including overdue revisions. Selecting a card starts that quiz again.
+Open the **Home** tab and look for **Memory plan**. It summarizes reviews due
+now, reviews coming in the next three days, and all active memory plans. The
+**Revision queue** shows the five nearest quizzes, including overdue reviews,
+with their last recall score, current interval stage, and next-review timing.
+Selecting a revision card starts that quiz again.
 
 Source:
 `lib/features/dashboard/presentation/screens/home_dashboard_screen.dart`
 
 ### Performance Dashboard
 
-From Home, select the **Dashboard** quick action. The **Upcoming Revisions**
-section lists future quiz revision dates. The same page can show an insight when
-revisions have been missed.
+Select **View insights** from Home to open **My Performance**. Opening it from
+the Memory Plan scrolls directly to **Memory & revision**, which shows due,
+overdue, upcoming, and active plans, the five interval stages, and actionable
+review cards. The dashboard also provides period comparisons, real daily study
+consistency, subject/topic rankings, completion-dated exam history, score
+trends, and personalized next actions. It does not invent a retention
+percentage.
 
 Source:
 `lib/features/dashboard/presentation/screens/performance_dashboard_screen.dart`

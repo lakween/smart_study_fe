@@ -1,6 +1,6 @@
 # Smart Study Developer Wiki
 
-This wiki describes the Flutter frontend in `my_app/` and the Express/Prisma backend in `../backend/` as reviewed on 2026-07-28. It is the starting point for future development.
+This wiki describes the Flutter frontend in `my_app/` and the Express/Prisma backend in `../backend/` as reviewed on 2026-07-29. It is the starting point for future development.
 
 ## Wiki map
 
@@ -14,8 +14,8 @@ This wiki describes the Flutter frontend in `my_app/` and the Express/Prisma bac
 
 ```text
 Flutter UI
-  -> Riverpod feature notifier
-  -> Dio + bearer token
+  -> Riverpod feature notifier + typed domain models
+  -> Dio + access token / rotating refresh session
   -> Express route + Zod validation
   -> Prisma
   -> PostgreSQL
@@ -25,8 +25,9 @@ Backend notification service
   -> Socket.IO event to authenticated user room
   -> Riverpod merges the event into visible app state
 
-Uploads -> Multer -> backend/uploads -> /uploads static URL
+Uploads -> Multer signature validation -> backend/uploads -> authenticated document file route
 AI quiz -> multipart upload -> PDF/image extraction -> selected OpenAI/Gemini provider -> editable questions -> quiz creation
+Performance -> completion-dated backend aggregates -> typed PerformanceReport -> charts, rankings, memory actions
 ```
 
 The app is feature-first. A normal change should update the feature screen, provider, shared model, backend route/schema, serializer, and tests together.
@@ -66,6 +67,6 @@ The app is feature-first. A normal change should update the feature screen, prov
 2. Keep enum conversion aligned between Dart camel-case values and Prisma uppercase values.
 3. Enforce ownership and visibility on the server, not only in the UI.
 4. Update Riverpod collections immutably after mutations so changes appear immediately.
-5. Use `ApiClient().dio`; it injects the secure bearer token.
+5. Use `ApiClient().dio`; it injects the access token and serializes refresh-token rotation before one retry.
 6. Keep file limits aligned: PDF/JPG/JPEG/PNG, maximum 10 MB.
 7. Never expose `.env`, JWT secrets, database credentials, or AI keys.

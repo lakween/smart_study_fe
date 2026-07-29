@@ -11,6 +11,7 @@ class SubjectCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onChangeVisibility;
+  final VoidCallback? onArchive;
 
   const SubjectCard({
     super.key,
@@ -20,6 +21,7 @@ class SubjectCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onChangeVisibility,
+    this.onArchive,
   });
 
   @override
@@ -77,10 +79,19 @@ class SubjectCard extends StatelessWidget {
                               if (val == 'edit') onEdit?.call();
                               if (val == 'delete') onDelete?.call();
                               if (val == 'visibility') onChangeVisibility?.call();
+                              if (val == 'archive') onArchive?.call();
                             },
                             itemBuilder: (_) => [
                               const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 16), SizedBox(width: 8), Text('Edit')])),
                               const PopupMenuItem(value: 'visibility', child: Row(children: [Icon(Icons.lock_outline, size: 16), SizedBox(width: 8), Text('Change Visibility')])),
+                              PopupMenuItem(
+                                value: 'archive',
+                                child: Row(children: [
+                                  Icon(subject.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(subject.isArchived ? 'Restore' : 'Archive'),
+                                ]),
+                              ),
                               const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 16, color: AppColors.error), SizedBox(width: 8), Text('Delete', style: TextStyle(color: AppColors.error))])),
                             ],
                           ),

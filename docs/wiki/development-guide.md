@@ -61,48 +61,46 @@ Backend:
 
 ```powershell
 npm run build
+npm test
+npm audit --omit=dev
 ```
 
-The current frontend test is only a template-level widget test; meaningful module tests still need to be added. The backend has no automated test script.
+Current focused coverage includes compact-phone navigation/exam/performance widgets, exam and performance DTO parsing, spaced-repetition transitions, exam lifecycle/scoring/release rules, safe error mapping, rate limiting, and enum mapping. Continue adding route-level authorization and database integration coverage.
 
 ## Known gaps and risks
 
 High priority:
 
-- Add backend/frontend automated tests for authentication, visibility, quiz scoring, exam participation, and friendships.
-- Handle Zod errors as 400 responses rather than generic 500 errors.
-- Refresh tokens do not exist. Authenticated REST `401` responses and Socket.IO authentication failures automatically clear the session and return the user to login.
-- Remove sensitive Dio request/response body logging from release builds.
-- Delete physical upload files when their records/account are removed, or document retention policy.
+- Expand utility/widget coverage with database-backed integration tests for authentication, visibility, refresh rotation, quizzes, exams, documents, and friendships.
+- Replace legacy avatar `/uploads/...` URLs with a dedicated, explicitly authorized or intentionally public avatar delivery route.
+- Account deletion still needs an explicit physical-upload retention/cleanup policy; individual document deletion cleans the final file reference.
 - Add database constraints ensuring a question belongs to exactly one quiz or exam.
 
 Functional gaps:
 
-- Password reset has no email delivery or token expiry.
+- Password reset has hashed expiring tokens but no production email delivery.
 - Subject/topic/quiz `allowCopy` is displayed/stored but copy endpoints are absent; only documents can be copied.
 - Settings font size, notification toggles, default visibility, terms, and privacy are not fully implemented.
 - Notifications use authenticated foreground Socket.IO events, not OS push; closed apps receive nothing.
-- Friends/request collections are separate from the notification stream and still require their own refresh after an incoming request.
 - Document viewing depends on external URL/open behavior; offline caching is absent.
-- Dashboard uses dynamic maps instead of typed models.
-- Friend discovery is paginated. Pagination is still absent for growing subjects, documents, quizzes, notifications, and activity histories.
+- Home's small summary statistics still use a map; performance analytics are typed. Documents and long activity histories still need incremental/aggregate query optimization.
 
 Security/data notes:
 
 - All content APIs require authentication, including public content.
-- File validation is extension-based; add MIME/signature checks for stronger upload security.
-- CORS defaults to all origins.
-- Password reset tokens are stored as plain values in development and have no expiration.
+- Uploads validate supported extensions and PDF/PNG/JPEG signatures, then require authenticated file access.
+- Development may allow broad CORS; production requires explicit configured origins.
+- Password reset tokens are hashed and expire; successful reset revokes refresh sessions.
 - Account and subject deletion cascade broadly; keep confirmations and add integration tests.
 
 ## Recommended next development order
 
-1. Tests and Zod error handling.
+1. Database-backed API integration tests.
 2. Complete settings persistence and application.
-3. Synchronize friend/request collections when related Socket.IO events arrive.
+3. Add a production email provider for password-reset delivery; development may return/log the reset token.
 4. Copy workflows for subjects/topics/quizzes, or remove unused flags.
-5. Pagination and typed dashboard models.
-6. Production password reset, logging hardening, and upload cleanup.
+5. Aggregate/paginate large document and analytics histories.
+6. Account-level physical-upload cleanup and the question-parent database constraint.
 
 ## Production deployment
 

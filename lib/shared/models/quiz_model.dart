@@ -20,6 +20,7 @@ class QuizModel extends Equatable {
   final double? avgScore;
   final DateTime? lastAttemptDate;
   final DateTime? nextRevisionDate;
+  final int? revisionIntervalDays;
   final DateTime createdAt;
 
   const QuizModel({
@@ -40,10 +41,21 @@ class QuizModel extends Equatable {
     this.avgScore,
     this.lastAttemptDate,
     this.nextRevisionDate,
+    this.revisionIntervalDays,
     required this.createdAt,
   });
 
   int get questionCount => questions.length;
+
+  int? get revisionStage {
+    final interval = revisionIntervalDays;
+    if (interval == null) return null;
+    if (interval >= 30) return 5;
+    if (interval >= 14) return 4;
+    if (interval >= 7) return 3;
+    if (interval >= 3) return 2;
+    return 1;
+  }
 
   factory QuizModel.fromJson(Map<String, dynamic> json) {
     return QuizModel(
@@ -53,7 +65,8 @@ class QuizModel extends Equatable {
       subjectName: json['subjectName'] as String? ?? '',
       topicId: json['topicId'] as String,
       topicName: json['topicName'] as String? ?? '',
-      visibility: ContentVisibilityExt.fromString(json['visibility'] as String? ?? 'private'),
+      visibility: ContentVisibilityExt.fromString(
+          json['visibility'] as String? ?? 'private'),
       allowCopy: json['allowCopy'] as bool? ?? false,
       isAiGenerated: json['isAiGenerated'] as bool? ?? false,
       timeLimitMinutes: (json['timeLimitMinutes'] as num?)?.toInt(),
@@ -64,8 +77,13 @@ class QuizModel extends Equatable {
       attemptCount: (json['attemptCount'] as num?)?.toInt() ?? 0,
       bestScore: (json['bestScore'] as num?)?.toDouble(),
       avgScore: (json['avgScore'] as num?)?.toDouble(),
-      lastAttemptDate: json['lastAttemptDate'] != null ? DateTime.parse(json['lastAttemptDate'] as String) : null,
-      nextRevisionDate: json['nextRevisionDate'] != null ? DateTime.parse(json['nextRevisionDate'] as String) : null,
+      lastAttemptDate: json['lastAttemptDate'] != null
+          ? DateTime.parse(json['lastAttemptDate'] as String)
+          : null,
+      nextRevisionDate: json['nextRevisionDate'] != null
+          ? DateTime.parse(json['nextRevisionDate'] as String)
+          : null,
+      revisionIntervalDays: (json['revisionIntervalDays'] as num?)?.toInt(),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
@@ -84,12 +102,25 @@ class QuizModel extends Equatable {
   }
 
   QuizModel copyWith({
-    String? id, String? title, String? subjectId, String? subjectName,
-    String? topicId, String? topicName, ContentVisibility? visibility,
-    bool? allowCopy, bool? isAiGenerated, int? timeLimitMinutes,
-    List<QuestionModel>? questions, String? ownerId, int? attemptCount,
-    double? bestScore, double? avgScore, DateTime? lastAttemptDate,
-    DateTime? nextRevisionDate, DateTime? createdAt,
+    String? id,
+    String? title,
+    String? subjectId,
+    String? subjectName,
+    String? topicId,
+    String? topicName,
+    ContentVisibility? visibility,
+    bool? allowCopy,
+    bool? isAiGenerated,
+    int? timeLimitMinutes,
+    List<QuestionModel>? questions,
+    String? ownerId,
+    int? attemptCount,
+    double? bestScore,
+    double? avgScore,
+    DateTime? lastAttemptDate,
+    DateTime? nextRevisionDate,
+    int? revisionIntervalDays,
+    DateTime? createdAt,
   }) {
     return QuizModel(
       id: id ?? this.id,
@@ -109,19 +140,55 @@ class QuizModel extends Equatable {
       avgScore: avgScore ?? this.avgScore,
       lastAttemptDate: lastAttemptDate ?? this.lastAttemptDate,
       nextRevisionDate: nextRevisionDate ?? this.nextRevisionDate,
+      revisionIntervalDays: revisionIntervalDays ?? this.revisionIntervalDays,
       createdAt: createdAt ?? this.createdAt,
     );
   }
 
   @override
-  List<Object?> get props => [id, title, subjectId, topicId, visibility, allowCopy,
-    isAiGenerated, timeLimitMinutes, questions, ownerId, attemptCount, bestScore, createdAt];
+  List<Object?> get props => [
+        id,
+        title,
+        subjectId,
+        topicId,
+        visibility,
+        allowCopy,
+        isAiGenerated,
+        timeLimitMinutes,
+        questions,
+        ownerId,
+        attemptCount,
+        bestScore,
+        avgScore,
+        lastAttemptDate,
+        nextRevisionDate,
+        revisionIntervalDays,
+        createdAt
+      ];
+}
+
+enum QuizPracticeMode { timed, untimed }
+
+extension QuizPracticeModeExt on QuizPracticeMode {
+  String get label => this == QuizPracticeMode.timed ? 'Timed' : 'Untimed';
+
+  static QuizPracticeMode? fromString(String? value) => switch (value) {
+        'timed' => QuizPracticeMode.timed,
+        'untimed' => QuizPracticeMode.untimed,
+        _ => null,
+      };
 }
 
 class QuizAttemptModel extends Equatable {
   final String id;
   final String quizId;
   final String quizTitle;
+  final String? subjectId;
+  final String? subjectName;
+  final String? topicId;
+  final String? topicName;
+  final bool isAiGenerated;
+  final QuizPracticeMode? practiceMode;
   final String userId;
   final List<QuestionAnswer> answers;
   final int correctCount;
@@ -134,6 +201,12 @@ class QuizAttemptModel extends Equatable {
     required this.id,
     required this.quizId,
     required this.quizTitle,
+    this.subjectId,
+    this.subjectName,
+    this.topicId,
+    this.topicName,
+    this.isAiGenerated = false,
+    this.practiceMode,
     required this.userId,
     required this.answers,
     required this.correctCount,
@@ -150,6 +223,13 @@ class QuizAttemptModel extends Equatable {
       id: json['id'] as String,
       quizId: json['quizId'] as String,
       quizTitle: json['quizTitle'] as String? ?? '',
+      subjectId: json['subjectId'] as String?,
+      subjectName: json['subjectName'] as String?,
+      topicId: json['topicId'] as String?,
+      topicName: json['topicName'] as String?,
+      isAiGenerated: json['isAiGenerated'] as bool? ?? false,
+      practiceMode:
+          QuizPracticeModeExt.fromString(json['practiceMode'] as String?),
       userId: json['userId'] as String,
       answers: (json['answers'] as List<dynamic>? ?? [])
           .map((a) => QuestionAnswer.fromJson(a as Map<String, dynamic>))
@@ -163,7 +243,23 @@ class QuizAttemptModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, quizId, userId, correctCount, totalQuestions, scorePercent, attemptedAt];
+  List<Object?> get props => [
+        id,
+        quizId,
+        quizTitle,
+        subjectId,
+        subjectName,
+        topicId,
+        topicName,
+        isAiGenerated,
+        practiceMode,
+        userId,
+        correctCount,
+        totalQuestions,
+        scorePercent,
+        timeTakenSeconds,
+        attemptedAt,
+      ];
 }
 
 class QuestionAnswer extends Equatable {
@@ -180,7 +276,9 @@ class QuestionAnswer extends Equatable {
   factory QuestionAnswer.fromJson(Map<String, dynamic> json) {
     return QuestionAnswer(
       questionId: json['questionId'] as String,
-      selectedAnswer: json['selectedAnswer'] != null ? AnswerOptionExt.fromString(json['selectedAnswer'] as String) : null,
+      selectedAnswer: json['selectedAnswer'] != null
+          ? AnswerOptionExt.fromString(json['selectedAnswer'] as String)
+          : null,
       isCorrect: json['isCorrect'] as bool? ?? false,
     );
   }

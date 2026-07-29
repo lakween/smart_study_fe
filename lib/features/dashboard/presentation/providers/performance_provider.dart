@@ -1,79 +1,81 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../shared/models/performance_model.dart';
 
 class PerformanceState {
   final bool isLoading;
   final String? error;
-  final Map<String, dynamic> summary;
-  final List<Map<String, dynamic>> scoreTrend;
-  final Map<String, double> subjectScores;
-  final Map<String, double> topicAccuracies;
-  final List<int> weeklyActivity;
-  final List<Map<String, dynamic>> upcomingRevisions;
-  final List<Map<String, dynamic>> insights;
-  final List<Map<String, dynamic>> recentExamHistory;
+  final PerformancePeriod period;
+  final PerformanceReport? report;
 
   const PerformanceState({
     this.isLoading = false,
     this.error,
-    this.summary = const {},
-    this.scoreTrend = const [],
-    this.subjectScores = const {},
-    this.topicAccuracies = const {},
-    this.weeklyActivity = const [0, 0, 0, 0, 0, 0, 0],
-    this.upcomingRevisions = const [],
-    this.insights = const [],
-    this.recentExamHistory = const [],
+    this.period = PerformancePeriod.week,
+    this.report,
   });
 
   PerformanceState copyWith({
-    bool? isLoading, String? error, Map<String, dynamic>? summary,
-    List<Map<String, dynamic>>? scoreTrend, Map<String, double>? subjectScores,
-    Map<String, double>? topicAccuracies, List<int>? weeklyActivity,
-    List<Map<String, dynamic>>? upcomingRevisions, List<Map<String, dynamic>>? insights,
-    List<Map<String, dynamic>>? recentExamHistory,
+    bool? isLoading,
+    String? error,
+    PerformancePeriod? period,
+    PerformanceReport? report,
   }) {
     return PerformanceState(
       isLoading: isLoading ?? this.isLoading,
       error: error,
-      summary: summary ?? this.summary,
-      scoreTrend: scoreTrend ?? this.scoreTrend,
-      subjectScores: subjectScores ?? this.subjectScores,
-      topicAccuracies: topicAccuracies ?? this.topicAccuracies,
-      weeklyActivity: weeklyActivity ?? this.weeklyActivity,
-      upcomingRevisions: upcomingRevisions ?? this.upcomingRevisions,
-      insights: insights ?? this.insights,
-      recentExamHistory: recentExamHistory ?? this.recentExamHistory,
+      period: period ?? this.period,
+      report: report ?? this.report,
     );
   }
 }
 
 class PerformanceNotifier extends StateNotifier<PerformanceState> {
-  final _dio = ApiClient().dio;
+  final Dio? _client;
 
-  PerformanceNotifier() : super(const PerformanceState()) { load(); }
+  Dio get _dio => _client ?? ApiClient().dio;
 
-  Future<void> load({String period = 'all'}) async {
-    state = state.copyWith(isLoading: true, error: null);
+  PerformanceNotifier({
+    PerformanceState initialState = const PerformanceState(),
+    bool autoLoad = true,
+    Dio? client,
+  })  : _client = client,
+        super(initialState) {
+    if (autoLoad) load(period: PerformancePeriod.week);
+  }
+
+  Future<void> load({PerformancePeriod? period}) async {
+    final selectedPeriod = period ?? state.period;
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      period: selectedPeriod,
+    );
     try {
-      final res = await _dio.get('/dashboard/performance', queryParameters: {'period': period});
-      final data = res.data as Map<String, dynamic>;
+      final response = await _dio.get(
+        '/dashboard/performance',
+        queryParameters: {'period': selectedPeriod.apiValue},
+      );
       state = state.copyWith(
         isLoading: false,
-        summary: data['summary'] as Map<String, dynamic>,
-        scoreTrend: (data['scoreTrend'] as List<dynamic>).cast<Map<String, dynamic>>(),
-        subjectScores: (data['subjectScores'] as Map<String, dynamic>).map((k, v) => MapEntry(k, (v as num).toDouble())),
-        topicAccuracies: (data['topicAccuracies'] as Map<String, dynamic>).map((k, v) => MapEntry(k, (v as num).toDouble())),
-        weeklyActivity: (data['weeklyActivity'] as List<dynamic>).map((e) => (e as num).toInt()).toList(),
-        upcomingRevisions: (data['upcomingRevisions'] as List<dynamic>).cast<Map<String, dynamic>>(),
-        insights: (data['insights'] as List<dynamic>).cast<Map<String, dynamic>>(),
-        recentExamHistory: (data['recentExamHistory'] as List<dynamic>).cast<Map<String, dynamic>>(),
+        error: null,
+        report: PerformanceReport.fromJson(
+          response.data as Map<String, dynamic>,
+        ),
       );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: apiErrorMessage(e));
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        error: apiErrorMessage(error),
+      );
     }
   }
 }
 
-final performanceProvider = StateNotifierProvider<PerformanceNotifier, PerformanceState>((ref) => PerformanceNotifier());
+final performanceProvider =
+    StateNotifierProvider<PerformanceNotifier, PerformanceState>(
+  (ref) => PerformanceNotifier(),
+);

@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/friend_tile.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
@@ -16,17 +18,42 @@ class FriendsListScreen extends ConsumerStatefulWidget {
 
 class _FriendsListScreenState extends ConsumerState<FriendsListScreen> {
   final _searchCtrl = TextEditingController();
+  final _scrollController = ScrollController();
+  Timer? _searchDebounce;
   String _query = '';
 
   @override
-  void dispose() { _searchCtrl.dispose(); super.dispose(); }
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        ref.read(friendProvider.notifier).loadMoreFriends();
+      }
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() => _query = value);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      ref.read(friendProvider.notifier).loadFriends(query: value);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchCtrl.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(friendProvider);
     final friends = state.friends;
     final pendingCount = state.received.length;
-    final filtered = _query.isEmpty ? friends : friends.where((f) => f.fullName.toLowerCase().contains(_query.toLowerCase())).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -55,29 +82,31 @@ class _FriendsListScreenState extends ConsumerState<FriendsListScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.search,
             child: TextField(
               controller: _searchCtrl,
-              onChanged: (v) => setState(() => _query = v),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Search friends...',
                 prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textMuted),
-                suffixIcon: _query.isNotEmpty ? IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () { _searchCtrl.clear(); setState(() => _query = ''); }) : null,
+                suffixIcon: _query.isNotEmpty ? IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () { _searchCtrl.clear(); _onSearchChanged(''); }) : null,
               ),
             ),
           ),
           Expanded(
             child: state.isLoading
                 ? const ListShimmer()
-                : filtered.isEmpty
+                : friends.isEmpty
                     ? EmptyState(icon: Icons.people_outline, title: 'No friends yet', message: 'Find people you know and send a friend request.', actionLabel: 'Find Friends', onAction: () => context.push('/friends/find'))
                     : RefreshIndicator(
-                        onRefresh: () => ref.read(friendProvider.notifier).load(),
+                        onRefresh: () => ref.read(friendProvider.notifier).loadFriends(query: _query),
                         child: ListView.separated(
-                          itemCount: filtered.length + 1,
+                          controller: _scrollController,
+                          padding: const EdgeInsets.only(bottom: 24),
+                          itemCount: friends.length + 1 + (state.isLoadingMoreFriends ? 1 : 0),
                           separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
                           itemBuilder: (_, i) {
-                            if (i == filtered.length) {
+                            if (i == friends.length) {
                               return Padding(
                                 padding: const EdgeInsets.all(20),
                                 child: OutlinedButton.icon(
@@ -88,7 +117,13 @@ class _FriendsListScreenState extends ConsumerState<FriendsListScreen> {
                                 ),
                               );
                             }
-                            final f = filtered[i];
+                            if (i > friends.length) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            final f = friends[i];
                             return FriendTile(
                               friend: f,
                               onViewProfile: () => context.push('/users/${f.id}/profile'),

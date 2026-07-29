@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/helpers.dart';
 import '../../../../shared/models/document_model.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
@@ -48,7 +49,7 @@ class DocumentViewerScreen extends ConsumerWidget {
                 : _PdfPlaceholder(url: doc.fileUrl),
           ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.page,
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCardBg : AppColors.cardBg,
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, -4))],

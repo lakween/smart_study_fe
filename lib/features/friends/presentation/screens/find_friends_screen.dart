@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/friend_model.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/friend_tile.dart';
@@ -62,7 +63,7 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.search,
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
@@ -99,7 +100,7 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
                             ),
                         child: ListView.separated(
                           controller: _scrollController,
-                          padding: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.only(bottom: 24),
                           itemCount: state.searchResults.length + (state.isLoadingMore ? 1 : 0),
                           separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
                           itemBuilder: (_, index) {

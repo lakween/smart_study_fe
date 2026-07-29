@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/document_model.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -104,7 +105,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
         body: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.page,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -144,7 +145,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   topics.isEmpty
                       ? EmptyState(icon: Icons.topic_outlined, title: 'No topics yet', message: 'Add topics to organize your subject content', actionLabel: 'Add Topic', onAction: _createTopic)
                       : ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppSpacing.list,
                           itemCount: topics.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (_, i) => TopicCard(
@@ -156,7 +157,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   quizzes.isEmpty
                       ? EmptyState(icon: Icons.quiz_outlined, title: 'No quizzes yet', message: 'Create quizzes to test your knowledge', actionLabel: 'Create Quiz', onAction: () => context.push('/quizzes/create'))
                       : ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppSpacing.list,
                           itemCount: quizzes.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (_, i) => QuizCard(
@@ -169,7 +170,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   docs.isEmpty
                       ? EmptyState(icon: Icons.folder_outlined, title: 'No documents yet', message: 'Upload documents for this subject', actionLabel: 'Upload', onAction: () => context.push('/documents/upload'))
                       : ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppSpacing.list,
                           itemCount: docs.length,
                           itemBuilder: (_, i) => _DocTile(doc: docs[i], onTap: () => context.push('/documents/${docs[i].id}/view')),
                         ),
@@ -186,8 +187,11 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               onPressed: () {
                 if (tab == 0) {
                   _createTopic();
-                } else if (tab == 1) context.push('/quizzes/create');
-                else context.push('/documents/upload');
+                } else if (tab == 1) {
+                  context.push('/quizzes/create');
+                } else {
+                  context.push('/documents/upload');
+                }
               },
               child: const Icon(Icons.add),
             );

@@ -27,10 +27,15 @@ description: Build, extend, debug, review, deploy, or test the Smart Study Flutt
 - Preserve mounted checks after asynchronous work before navigation or UI access.
 - Keep exam ownership based on the backend `mine` result and locally created exam IDs, not only `organizerId`, so new exams appear immediately.
 - Treat spaced-repetition scheduling as backend-owned. Quiz submission updates `[1, 3, 7, 14, 30]` day intervals at a 60% pass threshold; Flutter displays `nextRevisionDate` but does not calculate it.
+- Keep performance analytics server-authoritative and typed through `PerformanceReport`. Compare equal rolling periods, build activity from actual quiz attempts and submitted exam attempts, filter exam history by `submittedAt`, expose stored memory intervals/stages, and never invent a retention percentage. Preserve `/dashboard?section=memory` as the Home Memory Plan deep link.
 - Keep destructive actions behind confirmation and keep private/friends/public visibility and `allowCopy` rules intact.
 - Treat **My Subjects** as owner-only. `GET /subjects` returns only the authenticated user's subjects; keep cross-user discovery in explicit social/discovery flows.
 - Preserve parent context in nested creation flows. Subject-scoped topic creation must not ask for a subject; topic-scoped quiz creation must not ask for a subject or topic.
 - Keep quiz ownership controls server-authoritative. Owned quiz cards may edit/delete; edit replaces the current question set, and deletion requires confirmation.
+- Keep practice timing server-authoritative through `QuizSession`; submit `sessionId`, never client elapsed seconds. Hide solutions from non-owners until submission and preserve resumable local answer drafts.
+- Preserve rotating refresh-session behavior in `ApiClient`: serialize refresh, rotate the secure refresh token, retry once, and revoke on sign-out/password reset.
+- Keep growing quiz, friend, subject, and notification collections paginated. Friendship mutations must emit `friendship:changed` to both user rooms.
+- Serve document uploads only through authenticated document authorization. Verify magic bytes, parent ownership/visibility, and delete the physical file only after its final reference is gone. Do not expose the raw uploads directory; give avatars a separate explicit delivery policy.
 - Quiz time limits are optional whole minutes from 1 to 180. Before an attempt, offer timed practice when a limit exists and always offer untimed practice; start timing only after mode selection.
 - Normalize user-authored subject, topic, quiz, question, option, and explanation text before PostgreSQL writes; remove NUL characters and validate the normalized value.
 - Do not add a new state-management, routing, HTTP, persistence, serialization, or design-system library unless the request requires it.

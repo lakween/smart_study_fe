@@ -5,19 +5,27 @@ enum AnswerOption { a, b, c, d }
 extension AnswerOptionExt on AnswerOption {
   String get label {
     switch (this) {
-      case AnswerOption.a: return 'A';
-      case AnswerOption.b: return 'B';
-      case AnswerOption.c: return 'C';
-      case AnswerOption.d: return 'D';
+      case AnswerOption.a:
+        return 'A';
+      case AnswerOption.b:
+        return 'B';
+      case AnswerOption.c:
+        return 'C';
+      case AnswerOption.d:
+        return 'D';
     }
   }
 
   static AnswerOption fromString(String s) {
     switch (s.toUpperCase()) {
-      case 'A': return AnswerOption.a;
-      case 'B': return AnswerOption.b;
-      case 'C': return AnswerOption.c;
-      default: return AnswerOption.d;
+      case 'A':
+        return AnswerOption.a;
+      case 'B':
+        return AnswerOption.b;
+      case 'C':
+        return AnswerOption.c;
+      default:
+        return AnswerOption.d;
     }
   }
 }
@@ -32,6 +40,10 @@ class QuestionModel extends Equatable {
   final AnswerOption correctAnswer;
   final String? explanation;
 
+  /// False while an exam is in progress so the UI never treats the parser's
+  /// compatibility fallback as a real solution.
+  final bool hasSolution;
+
   const QuestionModel({
     required this.id,
     required this.text,
@@ -41,14 +53,19 @@ class QuestionModel extends Equatable {
     required this.optionD,
     required this.correctAnswer,
     this.explanation,
+    this.hasSolution = true,
   });
 
   String getOption(AnswerOption opt) {
     switch (opt) {
-      case AnswerOption.a: return optionA;
-      case AnswerOption.b: return optionB;
-      case AnswerOption.c: return optionC;
-      case AnswerOption.d: return optionD;
+      case AnswerOption.a:
+        return optionA;
+      case AnswerOption.b:
+        return optionB;
+      case AnswerOption.c:
+        return optionC;
+      case AnswerOption.d:
+        return optionD;
     }
   }
 
@@ -60,8 +77,11 @@ class QuestionModel extends Equatable {
       optionB: json['optionB'] as String,
       optionC: json['optionC'] as String,
       optionD: json['optionD'] as String,
-      correctAnswer: AnswerOptionExt.fromString(json['correctAnswer'] as String? ?? 'A'),
+      correctAnswer:
+          AnswerOptionExt.fromString(json['correctAnswer'] as String? ?? 'A'),
       explanation: json['explanation'] as String?,
+      hasSolution:
+          json.containsKey('correctAnswer') && json['correctAnswer'] != null,
     );
   }
 
@@ -78,8 +98,15 @@ class QuestionModel extends Equatable {
   }
 
   QuestionModel copyWith({
-    String? id, String? text, String? optionA, String? optionB,
-    String? optionC, String? optionD, AnswerOption? correctAnswer, String? explanation,
+    String? id,
+    String? text,
+    String? optionA,
+    String? optionB,
+    String? optionC,
+    String? optionD,
+    AnswerOption? correctAnswer,
+    String? explanation,
+    bool? hasSolution,
   }) {
     return QuestionModel(
       id: id ?? this.id,
@@ -90,9 +117,20 @@ class QuestionModel extends Equatable {
       optionD: optionD ?? this.optionD,
       correctAnswer: correctAnswer ?? this.correctAnswer,
       explanation: explanation ?? this.explanation,
+      hasSolution: hasSolution ?? this.hasSolution,
     );
   }
 
   @override
-  List<Object?> get props => [id, text, optionA, optionB, optionC, optionD, correctAnswer, explanation];
+  List<Object?> get props => [
+        id,
+        text,
+        optionA,
+        optionB,
+        optionC,
+        optionD,
+        correctAnswer,
+        explanation,
+        hasSolution,
+      ];
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/question_model.dart';
 import '../../../../shared/models/user_model.dart';
@@ -112,6 +113,13 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
 
   void _addQuestion() => setState(() => _questions.add(_QuestionForm(id: const Uuid().v4())));
   void _removeQuestion(int i) { _questions[i].dispose(); setState(() => _questions.removeAt(i)); }
+  void _moveQuestion(int from, int to) {
+    if (to < 0 || to >= _questions.length) return;
+    setState(() {
+      final question = _questions.removeAt(from);
+      _questions.insert(to, question);
+    });
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -181,7 +189,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
             : Form(
           key: _formKey,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: AppSpacing.form,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -260,6 +268,8 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
                   return _QuestionCard(
                     index: i, form: q,
                     onDelete: () => _removeQuestion(i),
+                    onMoveUp: i == 0 ? null : () => _moveQuestion(i, i - 1),
+                    onMoveDown: i == _questions.length - 1 ? null : () => _moveQuestion(i, i + 1),
                     onCorrectChanged: (ans) => setState(() => q.correct = ans),
                   );
                 }),
@@ -290,9 +300,18 @@ class _QuestionCard extends StatelessWidget {
   final int index;
   final _QuestionForm form;
   final VoidCallback onDelete;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
   final ValueChanged<AnswerOption> onCorrectChanged;
 
-  const _QuestionCard({required this.index, required this.form, required this.onDelete, required this.onCorrectChanged});
+  const _QuestionCard({
+    required this.index,
+    required this.form,
+    required this.onDelete,
+    required this.onMoveUp,
+    required this.onMoveDown,
+    required this.onCorrectChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -311,27 +330,37 @@ class _QuestionCard extends StatelessWidget {
             children: [
               Text('Question ${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
               const Spacer(),
+              IconButton(icon: const Icon(Icons.arrow_upward, size: 18), tooltip: 'Move up', onPressed: onMoveUp, padding: EdgeInsets.zero),
+              IconButton(icon: const Icon(Icons.arrow_downward, size: 18), tooltip: 'Move down', onPressed: onMoveDown, padding: EdgeInsets.zero),
               IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20), onPressed: onDelete, padding: EdgeInsets.zero),
             ],
           ),
           const SizedBox(height: 10),
           TextFormField(controller: form.text, maxLines: 2, decoration: InputDecoration(labelText: 'Question text *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none), filled: true), validator: Validators.questionText),
           const SizedBox(height: 10),
-          ...AnswerOption.values.map((opt) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                Radio<AnswerOption>(value: opt, groupValue: form.correct, onChanged: (v) => onCorrectChanged(v!), activeColor: AppColors.primary),
-                Expanded(
-                  child: TextFormField(
-                    controller: switch(opt) { AnswerOption.a => form.optA, AnswerOption.b => form.optB, AnswerOption.c => form.optC, AnswerOption.d => form.optD },
-                    decoration: InputDecoration(labelText: 'Option ${opt.label} *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none), filled: true, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-                    validator: Validators.option,
-                  ),
+          RadioGroup<AnswerOption>(
+            groupValue: form.correct,
+            onChanged: (value) {
+              if (value != null) onCorrectChanged(value);
+            },
+            child: Column(
+              children: AnswerOption.values.map((opt) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Radio<AnswerOption>(value: opt, activeColor: AppColors.primary),
+                    Expanded(
+                      child: TextFormField(
+                        controller: switch(opt) { AnswerOption.a => form.optA, AnswerOption.b => form.optB, AnswerOption.c => form.optC, AnswerOption.d => form.optD },
+                        decoration: InputDecoration(labelText: 'Option ${opt.label} *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none), filled: true, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
+                        validator: Validators.option,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              )).toList(),
             ),
-          )),
+          ),
           TextFormField(controller: form.explanation, decoration: InputDecoration(labelText: 'Explanation (optional)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none), filled: true, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10))),
         ],
       ),
