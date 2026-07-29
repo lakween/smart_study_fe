@@ -5,20 +5,28 @@ enum StudyLevel { school, undergraduate, postgraduate, selfLearner }
 extension StudyLevelExt on StudyLevel {
   String get label {
     switch (this) {
-      case StudyLevel.school: return 'School';
-      case StudyLevel.undergraduate: return 'Undergraduate';
-      case StudyLevel.postgraduate: return 'Postgraduate';
-      case StudyLevel.selfLearner: return 'Self-learner';
+      case StudyLevel.school:
+        return 'School';
+      case StudyLevel.undergraduate:
+        return 'Undergraduate';
+      case StudyLevel.postgraduate:
+        return 'Postgraduate';
+      case StudyLevel.selfLearner:
+        return 'Self-learner';
     }
   }
 
   static StudyLevel fromString(String s) {
     switch (s.toLowerCase()) {
-      case 'school': return StudyLevel.school;
-      case 'postgraduate': return StudyLevel.postgraduate;
+      case 'school':
+        return StudyLevel.school;
+      case 'postgraduate':
+        return StudyLevel.postgraduate;
       case 'self-learner':
-      case 'selflearner': return StudyLevel.selfLearner;
-      default: return StudyLevel.undergraduate;
+      case 'selflearner':
+        return StudyLevel.selfLearner;
+      default:
+        return StudyLevel.undergraduate;
     }
   }
 }
@@ -28,19 +36,25 @@ enum ContentVisibility { private, friendsOnly, public }
 extension ContentVisibilityExt on ContentVisibility {
   String get label {
     switch (this) {
-      case ContentVisibility.private: return 'Private';
-      case ContentVisibility.friendsOnly: return 'Friends Only';
-      case ContentVisibility.public: return 'Public';
+      case ContentVisibility.private:
+        return 'Private';
+      case ContentVisibility.friendsOnly:
+        return 'Friends Only';
+      case ContentVisibility.public:
+        return 'Public';
     }
   }
 
   static ContentVisibility fromString(String s) {
     switch (s.toLowerCase()) {
-      case 'public': return ContentVisibility.public;
+      case 'public':
+        return ContentVisibility.public;
       case 'friendsonly':
       case 'friends_only':
-      case 'friends only': return ContentVisibility.friendsOnly;
-      default: return ContentVisibility.private;
+      case 'friends only':
+        return ContentVisibility.friendsOnly;
+      default:
+        return ContentVisibility.private;
     }
   }
 }
@@ -53,6 +67,7 @@ class UserModel extends Equatable {
   final String? university;
   final StudyLevel studyLevel;
   final String? profileImageUrl;
+  final bool showFriendsOnlyPlaceholders;
   final int subjectCount;
   final int quizCount;
   final int friendCount;
@@ -68,6 +83,7 @@ class UserModel extends Equatable {
     this.university,
     required this.studyLevel,
     this.profileImageUrl,
+    this.showFriendsOnlyPlaceholders = true,
     this.subjectCount = 0,
     this.quizCount = 0,
     this.friendCount = 0,
@@ -83,8 +99,11 @@ class UserModel extends Equatable {
       email: json['email'] as String,
       bio: json['bio'] as String?,
       university: json['university'] as String?,
-      studyLevel: StudyLevelExt.fromString(json['studyLevel'] as String? ?? 'undergraduate'),
+      studyLevel: StudyLevelExt.fromString(
+          json['studyLevel'] as String? ?? 'undergraduate'),
       profileImageUrl: json['profileImageUrl'] as String?,
+      showFriendsOnlyPlaceholders:
+          json['showFriendsOnlyPlaceholders'] as bool? ?? true,
       subjectCount: (json['subjectCount'] as num?)?.toInt() ?? 0,
       quizCount: (json['quizCount'] as num?)?.toInt() ?? 0,
       friendCount: (json['friendCount'] as num?)?.toInt() ?? 0,
@@ -103,6 +122,7 @@ class UserModel extends Equatable {
       'university': university,
       'studyLevel': studyLevel.name,
       'profileImageUrl': profileImageUrl,
+      'showFriendsOnlyPlaceholders': showFriendsOnlyPlaceholders,
       'subjectCount': subjectCount,
       'quizCount': quizCount,
       'friendCount': friendCount,
@@ -113,10 +133,20 @@ class UserModel extends Equatable {
   }
 
   UserModel copyWith({
-    String? id, String? fullName, String? email, String? bio,
-    String? university, StudyLevel? studyLevel, String? profileImageUrl,
-    int? subjectCount, int? quizCount, int? friendCount,
-    int? quizzesAttempted, double? avgScore, DateTime? createdAt,
+    String? id,
+    String? fullName,
+    String? email,
+    String? bio,
+    String? university,
+    StudyLevel? studyLevel,
+    String? profileImageUrl,
+    bool? showFriendsOnlyPlaceholders,
+    int? subjectCount,
+    int? quizCount,
+    int? friendCount,
+    int? quizzesAttempted,
+    double? avgScore,
+    DateTime? createdAt,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -126,6 +156,8 @@ class UserModel extends Equatable {
       university: university ?? this.university,
       studyLevel: studyLevel ?? this.studyLevel,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      showFriendsOnlyPlaceholders:
+          showFriendsOnlyPlaceholders ?? this.showFriendsOnlyPlaceholders,
       subjectCount: subjectCount ?? this.subjectCount,
       quizCount: quizCount ?? this.quizCount,
       friendCount: friendCount ?? this.friendCount,
@@ -136,6 +168,20 @@ class UserModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, fullName, email, bio, university, studyLevel,
-    profileImageUrl, subjectCount, quizCount, friendCount, quizzesAttempted, avgScore, createdAt];
+  List<Object?> get props => [
+        id,
+        fullName,
+        email,
+        bio,
+        university,
+        studyLevel,
+        profileImageUrl,
+        showFriendsOnlyPlaceholders,
+        subjectCount,
+        quizCount,
+        friendCount,
+        quizzesAttempted,
+        avgScore,
+        createdAt
+      ];
 }

@@ -71,4 +71,6 @@ Use `npm run seed:test-users` when development needs the repeatable 100-user dat
 
 Run `dart format lib test` when formatting changes are authorized. For platform-specific work, also run the relevant build or launch command. Use `--dart-define=API_BASE_URL=<url>` for non-default backend locations; Android emulator localhost maps to `10.0.2.2`.
 
+For Android release work, keep `android.permission.INTERNET` in `android/app/src/main/AndroidManifest.xml`; debug/profile manifests do not contribute it to a release APK. Release mode defaults to `AppEnvironment.productionUrl`, while a non-empty `API_BASE_URL` remains the highest-priority compile-time override. Rebuild and reinstall after changing either value because an installed APK retains its compiled URL. Verify the generated APK manifest with `aapt dump permissions` and require a successful build plus a newly updated artifact before reporting completion.
+
 Before finishing, inspect both repository diffs when applicable, confirm imports/routes/socket lifecycle, verify async mounted safety, and report checks that could not run. For production socket changes, confirm the `/smart-study/socket.io` reverse-proxy upgrade configuration documented in `../backend/DEPLOYMENT.md`.

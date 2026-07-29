@@ -106,3 +106,10 @@ final documentsBySubjectProvider = Provider.family<List<DocumentModel>, String>(
 final documentsByTopicProvider = Provider.family<List<DocumentModel>, String>((ref, topicId) {
   return ref.watch(documentProvider).documents.where((d) => d.topicId == topicId).toList();
 });
+
+final subjectDocumentsProvider = FutureProvider.family<List<DocumentModel>, String>((ref, subjectId) async {
+  final response = await ApiClient().dio.get('/documents', queryParameters: {'subjectId': subjectId});
+  return (response.data['documents'] as List<dynamic>)
+      .map((document) => DocumentModel.fromJson(document as Map<String, dynamic>))
+      .toList();
+});

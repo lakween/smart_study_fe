@@ -326,3 +326,15 @@ final attemptByIdProvider = Provider.family<QuizAttemptModel?, String>((ref, id)
   }
   return null;
 });
+
+final subjectQuizzesProvider = FutureProvider.family<List<QuizModel>, String>((ref, subjectId) async {
+  final response = await ApiClient().dio.get('/quizzes', queryParameters: {
+    'filter': 'accessible',
+    'subjectId': subjectId,
+    'page': 1,
+    'limit': 50,
+  });
+  return (response.data['quizzes'] as List<dynamic>)
+      .map((quiz) => QuizModel.fromJson(quiz as Map<String, dynamic>))
+      .toList();
+});

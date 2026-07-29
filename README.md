@@ -45,6 +45,35 @@ Override the backend when required:
 flutter run --dart-define=API_BASE_URL=http://YOUR_BACKEND:4000
 ```
 
+Debug Android builds use `http://10.0.2.2:4000` by default. Release builds
+automatically use the deployed HTTPS backend from
+`lib/core/config/app_environment.dart`. A non-empty `API_BASE_URL` Dart define
+overrides both defaults.
+
+## Build an Android release
+
+Build a release APK for direct installation:
+
+```powershell
+flutter build apk --release
+```
+
+The output is `build/app/outputs/flutter-apk/app-release.apk`. URL and Android
+manifest changes are compiled into the APK, so rebuild and reinstall after
+changing them. The main Android manifest must contain
+`android.permission.INTERNET`; having it only in the debug/profile manifests
+produces a release app that cannot reach the API.
+
+For Google Play, build an app bundle:
+
+```powershell
+flutter build appbundle --release
+```
+
+The current Android release configuration still signs with the debug key. It
+is suitable for release-mode testing but must be replaced with a protected
+upload keystore before Play Store or external production distribution.
+
 ## How spaced repetition works
 
 Spaced repetition schedules quiz revision at gradually increasing intervals.

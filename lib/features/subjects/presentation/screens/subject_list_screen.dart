@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
 import '../../../../shared/widgets/subject_card.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
@@ -24,6 +25,14 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
   String _sort = 'updated';
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _reload();
+    });
+  }
 
   @override
   void dispose() {
@@ -125,8 +134,10 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
           Expanded(
             child: state.isLoading
                 ? const SubjectCardShimmer()
-                : subjects.isEmpty
-                    ? EmptyState(
+                : state.error != null
+                    ? ErrorState(message: state.error!, onRetry: _reload)
+                    : subjects.isEmpty
+                        ? EmptyState(
                         icon: Icons.book_outlined,
                         title: 'No subjects yet',
                         message: 'Create your first subject to start organizing your studies!',
@@ -135,33 +146,40 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
                       )
                     : RefreshIndicator(
                         onRefresh: () async => _reload(),
-                        child: GridView.builder(
-                          padding: AppSpacing.listWithFab,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.82,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => GridView.builder(
+                            padding: AppSpacing.listWithFab,
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: constraints.maxWidth >= 720 ? 2 : 1,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 14,
+                              mainAxisExtent: 278,
+                            ),
+                            itemCount: subjects.length,
+                            itemBuilder: (_, i) {
+                              final s = subjects[i];
+                              return SubjectCard(
+                                subject: s,
+                                isOwn: true,
+                                onTap: () => context.push('/subjects/${s.id}'),
+                                onEdit: () => _openSubjectEditor('/subjects/${s.id}/edit'),
+                                onArchive: () async {
+                                  await ref.read(subjectProvider.notifier).setArchived(s, !s.isArchived);
+                                  _reload();
+                                },
+                                onDelete: () async {
+                                  final ok = await ConfirmDialog.show(
+                                    context,
+                                    title: 'Delete Subject',
+                                    message: 'Are you sure you want to delete "${s.name}"? This cannot be undone.',
+                                    confirmLabel: 'Delete',
+                                    isDestructive: true,
+                                  );
+                                  if (ok == true) ref.read(subjectProvider.notifier).deleteSubject(s.id);
+                                },
+                              );
+                            },
                           ),
-                          itemCount: subjects.length,
-                          itemBuilder: (_, i) {
-                            final s = subjects[i];
-                            return SubjectCard(
-                              subject: s,
-                              isOwn: true,
-                              onTap: () => context.push('/subjects/${s.id}'),
-                              onEdit: () => _openSubjectEditor('/subjects/${s.id}/edit'),
-                              onArchive: () async {
-                                await ref.read(subjectProvider.notifier).setArchived(s, !s.isArchived);
-                                _reload();
-                              },
-                              onDelete: () async {
-                                final ok = await ConfirmDialog.show(context,
-                                  title: 'Delete Subject',
-                                  message: 'Are you sure you want to delete "${s.name}"? This cannot be undone.',
-                                  confirmLabel: 'Delete', isDestructive: true,
-                                );
-                                if (ok == true) ref.read(subjectProvider.notifier).deleteSubject(s.id);
-                              },
-                            );
-                          },
                         ),
                       ),
           ),

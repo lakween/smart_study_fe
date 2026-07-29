@@ -34,6 +34,38 @@ flutter run --dart-define=API_BASE_URL=http://YOUR_COMPUTER_IP:4000
 
 `PUBLIC_BASE_URL` must use the same reachable host or uploaded images/files will point at localhost.
 
+## Android release build
+
+Release mode automatically selects the deployed HTTPS URL from
+`AppEnvironment.productionUrl`. Use an explicit compile-time override only for
+a different production or staging backend:
+
+```powershell
+flutter build apk --release --dart-define=API_BASE_URL=https://api.example.com/smart-study
+```
+
+Without an override, build with:
+
+```powershell
+flutter build apk --release
+```
+
+Install `build/app/outputs/flutter-apk/app-release.apk`. Rebuild and reinstall
+after changing a Dart define or manifest because an already-installed APK
+retains the old compiled values.
+
+Before handing off an APK:
+
+1. Confirm the production `/health` endpoint returns HTTP 200.
+2. Confirm `android/app/src/main/AndroidManifest.xml` contains `android.permission.INTERNET`.
+3. Require the build command to succeed and confirm the APK timestamp changed.
+4. Inspect the compiled APK with Android Build Tools: `aapt dump permissions build/app/outputs/flutter-apk/app-release.apk`.
+5. Install the new artifact and check Android logs for DNS, connection, and TLS errors.
+
+For Google Play, use `flutter build appbundle --release`. The current Gradle
+release configuration uses the debug signing key; configure and securely back
+up a production upload keystore before publishing.
+
 ## Adding or changing a module
 
 1. Confirm the Prisma entity and enum representation.
@@ -71,6 +103,7 @@ Current focused coverage includes compact-phone navigation/exam/performance widg
 
 High priority:
 
+- Replace the Android release debug signing configuration with a protected upload keystore before external distribution.
 - Expand utility/widget coverage with database-backed integration tests for authentication, visibility, refresh rotation, quizzes, exams, documents, and friendships.
 - Replace legacy avatar `/uploads/...` URLs with a dedicated, explicitly authorized or intentionally public avatar delivery route.
 - Account deletion still needs an explicit physical-upload retention/cleanup policy; individual document deletion cleans the final file reference.

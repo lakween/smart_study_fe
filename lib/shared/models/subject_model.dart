@@ -11,6 +11,10 @@ class SubjectModel extends Equatable {
   final String ownerId;
   final String? ownerName;
   final String? ownerImageUrl;
+  final String? originalCreatorId;
+  final String? originalCreatorName;
+  final String? copiedFromId;
+  final int copiedByCount;
   final int topicCount;
   final int quizCount;
   final double avgScore;
@@ -27,6 +31,10 @@ class SubjectModel extends Equatable {
     required this.ownerId,
     this.ownerName,
     this.ownerImageUrl,
+    this.originalCreatorId,
+    this.originalCreatorName,
+    this.copiedFromId,
+    this.copiedByCount = 0,
     this.topicCount = 0,
     this.quizCount = 0,
     this.avgScore = 0.0,
@@ -45,6 +53,10 @@ class SubjectModel extends Equatable {
       ownerId: json['ownerId'] as String,
       ownerName: json['ownerName'] as String?,
       ownerImageUrl: json['ownerImageUrl'] as String?,
+      originalCreatorId: json['originalCreatorId'] as String?,
+      originalCreatorName: json['originalCreatorName'] as String?,
+      copiedFromId: json['copiedFromId'] as String?,
+      copiedByCount: (json['copiedByCount'] as num?)?.toInt() ?? 0,
       topicCount: (json['topicCount'] as num?)?.toInt() ?? 0,
       quizCount: (json['quizCount'] as num?)?.toInt() ?? 0,
       avgScore: (json['avgScore'] as num?)?.toDouble() ?? 0.0,

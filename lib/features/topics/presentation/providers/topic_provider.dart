@@ -31,6 +31,10 @@ class TopicNotifier extends StateNotifier<TopicState> {
     state = state.copyWith(topics: [...others, ...fetched]);
   }
 
+  void cacheForSubject(String subjectId, List<TopicModel> topics) {
+    _mergeTopics(subjectId, topics);
+  }
+
   void _upsert(TopicModel topic) {
     final others = state.topics.where((t) => t.id != topic.id).toList();
     state = state.copyWith(topics: [...others, topic]);
@@ -115,4 +119,15 @@ final topicByIdProvider = Provider.family<TopicModel?, String>((ref, id) {
 });
 final topicsBySubjectProvider = Provider.family<List<TopicModel>, String>((ref, subjectId) {
   return ref.watch(topicProvider).topics.where((t) => t.subjectId == subjectId).toList();
+});
+
+/// Gives Subject Details an isolated request lifecycle so another subject load
+/// cannot replace its loading/error state in the shared topic cache.
+final subjectTopicsProvider = FutureProvider.family<List<TopicModel>, String>((ref, subjectId) async {
+  final response = await ApiClient().dio.get('/topics', queryParameters: {'subjectId': subjectId});
+  final topics = (response.data['topics'] as List<dynamic>)
+      .map((topic) => TopicModel.fromJson(topic as Map<String, dynamic>))
+      .toList();
+  ref.read(topicProvider.notifier).cacheForSubject(subjectId, topics);
+  return topics;
 });

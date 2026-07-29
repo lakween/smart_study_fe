@@ -8,6 +8,10 @@ class TopicModel extends Equatable {
   final String? description;
   final ContentVisibility visibility;
   final bool allowCopy;
+  final String? originalCreatorId;
+  final String? originalCreatorName;
+  final String? copiedFromId;
+  final int copiedByCount;
   final bool isArchived;
   final int quizCount;
   final double? lastScore;
@@ -21,6 +25,10 @@ class TopicModel extends Equatable {
     this.description,
     required this.visibility,
     required this.allowCopy,
+    this.originalCreatorId,
+    this.originalCreatorName,
+    this.copiedFromId,
+    this.copiedByCount = 0,
     this.isArchived = false,
     this.quizCount = 0,
     this.lastScore,
@@ -36,6 +44,10 @@ class TopicModel extends Equatable {
       description: json['description'] as String?,
       visibility: ContentVisibilityExt.fromString(json['visibility'] as String? ?? 'private'),
       allowCopy: json['allowCopy'] as bool? ?? false,
+      originalCreatorId: json['originalCreatorId'] as String?,
+      originalCreatorName: json['originalCreatorName'] as String?,
+      copiedFromId: json['copiedFromId'] as String?,
+      copiedByCount: (json['copiedByCount'] as num?)?.toInt() ?? 0,
       isArchived: json['isArchived'] as bool? ?? false,
       quizCount: (json['quizCount'] as num?)?.toInt() ?? 0,
       lastScore: (json['lastScore'] as num?)?.toDouble(),

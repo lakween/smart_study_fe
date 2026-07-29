@@ -109,3 +109,10 @@ final subjectByIdProvider = Provider.family<SubjectModel?, String>((ref, id) {
   }
   return null;
 });
+
+/// Loads one subject through the visibility-aware detail endpoint. This stays
+/// separate from [subjectProvider], whose collection is strictly "My Subjects".
+final sharedSubjectDetailProvider = FutureProvider.family<SubjectModel, String>((ref, id) async {
+  final response = await ApiClient().dio.get('/subjects/$id');
+  return SubjectModel.fromJson(response.data['subject'] as Map<String, dynamic>);
+});

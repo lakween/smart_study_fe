@@ -26,9 +26,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _examReminders = true;
   bool _friendRequests = true;
   bool _spacedRepetition = true;
+  bool _showFriendsOnlyPlaceholders = true;
+  bool _savingPrivacy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _showFriendsOnlyPlaceholders =
+        ref.read(authProvider).user?.showFriendsOnlyPlaceholders ?? true;
+  }
+
+  Future<void> _setLockedPlaceholders(bool value) async {
+    if (_savingPrivacy) return;
+    setState(() {
+      _showFriendsOnlyPlaceholders = value;
+      _savingPrivacy = true;
+    });
+    try {
+      final response = await ApiClient().dio.patch('/users/me', data: {
+        'showFriendsOnlyPlaceholders': value,
+      });
+      ref.read(authProvider.notifier).setUser(
+            UserModel.fromJson(response.data['user'] as Map<String, dynamic>),
+          );
+    } catch (error) {
+      if (mounted) {
+        setState(() => _showFriendsOnlyPlaceholders = !value);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(apiErrorMessage(error)),
+              backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingPrivacy = false);
+    }
+  }
 
   Future<void> _signOut() async {
-    final ok = await ConfirmDialog.show(context, title: 'Sign Out', message: 'Are you sure you want to sign out?', confirmLabel: 'Sign Out', isDestructive: true);
+    final ok = await ConfirmDialog.show(context,
+        title: 'Sign Out',
+        message: 'Are you sure you want to sign out?',
+        confirmLabel: 'Sign Out',
+        isDestructive: true);
     if (ok == true && mounted) {
       await ref.read(authProvider.notifier).signOut();
       if (mounted) context.go('/login');
@@ -46,23 +86,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         content: Form(
           key: formKey,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextFormField(controller: currentCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'Current password'), validator: (v) => v == null || v.isEmpty ? 'Required' : null),
+            TextFormField(
+                controller: currentCtrl,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: 'Current password'),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null),
             const SizedBox(height: 12),
-            TextFormField(controller: newCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'New password'), validator: Validators.password),
+            TextFormField(
+                controller: newCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'New password'),
+                validator: Validators.password),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () { if (formKey.currentState!.validate()) Navigator.of(dialogContext).pop(true); }, child: const Text('Save')),
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate())
+                  Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Save')),
         ],
       ),
     );
     if (ok != true || !mounted) return;
     try {
-      await ApiClient().dio.post('/users/me/change-password', data: {'currentPassword': currentCtrl.text, 'newPassword': newCtrl.text});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated'), backgroundColor: AppColors.success));
+      await ApiClient().dio.post('/users/me/change-password', data: {
+        'currentPassword': currentCtrl.text,
+        'newPassword': newCtrl.text
+      });
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Password updated'),
+            backgroundColor: AppColors.success));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e)), backgroundColor: AppColors.error));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(apiErrorMessage(e)),
+            backgroundColor: AppColors.error));
     }
   }
 
@@ -77,36 +142,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         content: Form(
           key: formKey,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextFormField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'New email'), validator: Validators.email),
+            TextFormField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(labelText: 'New email'),
+                validator: Validators.email),
             const SizedBox(height: 12),
-            TextFormField(controller: passwordCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'Current password'), validator: (v) => v == null || v.isEmpty ? 'Required' : null),
+            TextFormField(
+                controller: passwordCtrl,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: 'Current password'),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () { if (formKey.currentState!.validate()) Navigator.of(dialogContext).pop(true); }, child: const Text('Save')),
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate())
+                  Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Save')),
         ],
       ),
     );
     if (ok != true || !mounted) return;
     try {
-      final res = await ApiClient().dio.post('/users/me/change-email', data: {'newEmail': emailCtrl.text.trim(), 'password': passwordCtrl.text});
-      ref.read(authProvider.notifier).setUser(UserModel.fromJson(res.data['user'] as Map<String, dynamic>));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email updated'), backgroundColor: AppColors.success));
+      final res = await ApiClient().dio.post('/users/me/change-email', data: {
+        'newEmail': emailCtrl.text.trim(),
+        'password': passwordCtrl.text
+      });
+      ref.read(authProvider.notifier).setUser(
+          UserModel.fromJson(res.data['user'] as Map<String, dynamic>));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Email updated'),
+            backgroundColor: AppColors.success));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e)), backgroundColor: AppColors.error));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(apiErrorMessage(e)),
+            backgroundColor: AppColors.error));
     }
   }
 
   Future<void> _deleteAccount() async {
-    final ok = await ConfirmDialog.show(context, title: 'Delete Account', message: 'This will permanently delete your account and all data.', confirmLabel: 'Delete', isDestructive: true);
+    final ok = await ConfirmDialog.show(context,
+        title: 'Delete Account',
+        message: 'This will permanently delete your account and all data.',
+        confirmLabel: 'Delete',
+        isDestructive: true);
     if (ok != true || !mounted) return;
     try {
       await ApiClient().dio.delete('/users/me');
       await ref.read(authProvider.notifier).signOut();
       if (mounted) context.go('/login');
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e)), backgroundColor: AppColors.error));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(apiErrorMessage(e)),
+            backgroundColor: AppColors.error));
     }
   }
 
@@ -120,9 +217,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         children: [
           const _SectionTitle('Account'),
-          _SettingsTile(icon: Icons.lock_outline, title: 'Change Password', onTap: _changePassword),
-          _SettingsTile(icon: Icons.email_outlined, title: 'Update Email', onTap: _updateEmail),
-          _SettingsTile(icon: Icons.delete_outline, title: 'Delete Account', textColor: AppColors.error, iconColor: AppColors.error, onTap: _deleteAccount),
+          _SettingsTile(
+              icon: Icons.lock_outline,
+              title: 'Change Password',
+              onTap: _changePassword),
+          _SettingsTile(
+              icon: Icons.email_outlined,
+              title: 'Update Email',
+              onTap: _updateEmail),
+          _SettingsTile(
+              icon: Icons.delete_outline,
+              title: 'Delete Account',
+              textColor: AppColors.error,
+              iconColor: AppColors.error,
+              onTap: _deleteAccount),
           const Divider(),
           const _SectionTitle('Appearance'),
           SwitchListTile(
@@ -138,7 +246,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Font Size'),
             subtitle: Slider(
               value: fontSize,
-              min: 12, max: 18, divisions: 3,
+              min: 12,
+              max: 18,
+              divisions: 3,
               label: '${fontSize.toInt()}pt',
               onChanged: (v) => ref.read(fontSizeProvider.notifier).state = v,
               activeColor: AppColors.primary,
@@ -146,26 +256,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const Divider(),
           const _SectionTitle('Notifications'),
-          SwitchListTile(value: _quizReminders, onChanged: (v) => setState(() => _quizReminders = v), secondary: const Icon(Icons.quiz_outlined), title: const Text('Quiz Reminders'), activeThumbColor: AppColors.primary),
-          SwitchListTile(value: _examReminders, onChanged: (v) => setState(() => _examReminders = v), secondary: const Icon(Icons.assignment_outlined), title: const Text('Exam Reminders'), activeThumbColor: AppColors.primary),
-          SwitchListTile(value: _friendRequests, onChanged: (v) => setState(() => _friendRequests = v), secondary: const Icon(Icons.person_add_outlined), title: const Text('Friend Requests'), activeThumbColor: AppColors.primary),
-          SwitchListTile(value: _spacedRepetition, onChanged: (v) => setState(() => _spacedRepetition = v), secondary: const Icon(Icons.refresh), title: const Text('Spaced Repetition'), activeThumbColor: AppColors.primary),
+          SwitchListTile(
+              value: _quizReminders,
+              onChanged: (v) => setState(() => _quizReminders = v),
+              secondary: const Icon(Icons.quiz_outlined),
+              title: const Text('Quiz Reminders'),
+              activeThumbColor: AppColors.primary),
+          SwitchListTile(
+              value: _examReminders,
+              onChanged: (v) => setState(() => _examReminders = v),
+              secondary: const Icon(Icons.assignment_outlined),
+              title: const Text('Exam Reminders'),
+              activeThumbColor: AppColors.primary),
+          SwitchListTile(
+              value: _friendRequests,
+              onChanged: (v) => setState(() => _friendRequests = v),
+              secondary: const Icon(Icons.person_add_outlined),
+              title: const Text('Friend Requests'),
+              activeThumbColor: AppColors.primary),
+          SwitchListTile(
+              value: _spacedRepetition,
+              onChanged: (v) => setState(() => _spacedRepetition = v),
+              secondary: const Icon(Icons.refresh),
+              title: const Text('Spaced Repetition'),
+              activeThumbColor: AppColors.primary),
           const Divider(),
           const _SectionTitle('Privacy'),
+          SwitchListTile(
+            value: _showFriendsOnlyPlaceholders,
+            onChanged: _savingPrivacy ? null : _setLockedPlaceholders,
+            secondary: const Icon(Icons.visibility_off_outlined),
+            title: const Text('Show locked content cards'),
+            subtitle: const Text(
+                'Non-friends see generic placeholders for friends-only content. Private content always stays hidden.'),
+            activeThumbColor: AppColors.primary,
+          ),
           ListTile(
             leading: const Icon(Icons.lock_outline),
             title: const Text('Default Content Visibility'),
             trailing: DropdownButton<String>(
-              value: 'Private', underline: const SizedBox(),
-              items: ['Private', 'Friends Only', 'Public'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+              value: 'Private',
+              underline: const SizedBox(),
+              items: ['Private', 'Friends Only', 'Public']
+                  .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                  .toList(),
               onChanged: (_) {},
             ),
           ),
           const Divider(),
           const _SectionTitle('About'),
-          const ListTile(leading: Icon(Icons.info_outline), title: Text('App Version'), trailing: Text(AppConstants.appVersion, style: TextStyle(color: AppColors.textMuted))),
-          _SettingsTile(icon: Icons.article_outlined, title: 'Terms of Service', onTap: () {}),
-          _SettingsTile(icon: Icons.privacy_tip_outlined, title: 'Privacy Policy', onTap: () {}),
+          const ListTile(
+              leading: Icon(Icons.info_outline),
+              title: Text('App Version'),
+              trailing: Text(AppConstants.appVersion,
+                  style: TextStyle(color: AppColors.textMuted))),
+          _SettingsTile(
+              icon: Icons.article_outlined,
+              title: 'Terms of Service',
+              onTap: () {}),
+          _SettingsTile(
+              icon: Icons.privacy_tip_outlined,
+              title: 'Privacy Policy',
+              onTap: () {}),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -193,26 +345,40 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(
-      AppSpacing.pageGutter,
-      20,
-      AppSpacing.pageGutter,
-      8,
-    ),
-    child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary, letterSpacing: 0.5)),
-  );
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.pageGutter,
+          20,
+          AppSpacing.pageGutter,
+          8,
+        ),
+        child: Text(title,
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+                letterSpacing: 0.5)),
+      );
 }
 
 class _SettingsTile extends StatelessWidget {
-  final IconData icon; final String title; final VoidCallback onTap;
-  final Color? textColor; final Color? iconColor;
-  const _SettingsTile({required this.icon, required this.title, required this.onTap, this.textColor, this.iconColor});
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final Color? textColor;
+  final Color? iconColor;
+  const _SettingsTile(
+      {required this.icon,
+      required this.title,
+      required this.onTap,
+      this.textColor,
+      this.iconColor});
 
   @override
   Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon, color: iconColor),
-    title: Text(title, style: TextStyle(color: textColor)),
-    trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
-    onTap: onTap,
-  );
+        leading: Icon(icon, color: iconColor),
+        title: Text(title, style: TextStyle(color: textColor)),
+        trailing: const Icon(Icons.arrow_forward_ios,
+            size: 14, color: AppColors.textMuted),
+        onTap: onTap,
+      );
 }

@@ -38,6 +38,9 @@ class DocumentModel extends Equatable {
   final ContentVisibility visibility;
   final bool allowCopy;
   final String ownerId;
+  final String? originalCreatorId;
+  final String? originalCreatorName;
+  final String? copiedFromId;
   final DateTime uploadedAt;
 
   const DocumentModel({
@@ -53,6 +56,9 @@ class DocumentModel extends Equatable {
     required this.visibility,
     required this.allowCopy,
     required this.ownerId,
+    this.originalCreatorId,
+    this.originalCreatorName,
+    this.copiedFromId,
     required this.uploadedAt,
   });
 
@@ -70,6 +76,9 @@ class DocumentModel extends Equatable {
       visibility: ContentVisibilityExt.fromString(json['visibility'] as String? ?? 'private'),
       allowCopy: json['allowCopy'] as bool? ?? false,
       ownerId: json['ownerId'] as String,
+      originalCreatorId: json['originalCreatorId'] as String?,
+      originalCreatorName: json['originalCreatorName'] as String?,
+      copiedFromId: json['copiedFromId'] as String?,
       uploadedAt: DateTime.parse(json['uploadedAt'] as String),
     );
   }

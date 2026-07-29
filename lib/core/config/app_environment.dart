@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 
 class AppEnvironment {
   AppEnvironment._();
@@ -14,7 +14,10 @@ class AppEnvironment {
 
   static const String _urlOverride = String.fromEnvironment('API_BASE_URL');
 
-  static bool get isProduction => _environment.toLowerCase() == 'production';
+  // Release builds must never silently fall back to a loopback development
+  // server. API_BASE_URL can still override this for staging or self-hosting.
+  static bool get isProduction =>
+      kReleaseMode || _environment.toLowerCase() == 'production';
 
   static String get baseUrl {
     if (_urlOverride.isNotEmpty) return _urlOverride;

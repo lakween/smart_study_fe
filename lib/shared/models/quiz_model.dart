@@ -15,6 +15,10 @@ class QuizModel extends Equatable {
   final int? timeLimitMinutes;
   final List<QuestionModel> questions;
   final String ownerId;
+  final String? originalCreatorId;
+  final String? originalCreatorName;
+  final String? copiedFromId;
+  final int copiedByCount;
   final int attemptCount;
   final double? bestScore;
   final double? avgScore;
@@ -36,6 +40,10 @@ class QuizModel extends Equatable {
     this.timeLimitMinutes,
     required this.questions,
     required this.ownerId,
+    this.originalCreatorId,
+    this.originalCreatorName,
+    this.copiedFromId,
+    this.copiedByCount = 0,
     this.attemptCount = 0,
     this.bestScore,
     this.avgScore,
@@ -74,6 +82,10 @@ class QuizModel extends Equatable {
           .map((q) => QuestionModel.fromJson(q as Map<String, dynamic>))
           .toList(),
       ownerId: json['ownerId'] as String,
+      originalCreatorId: json['originalCreatorId'] as String?,
+      originalCreatorName: json['originalCreatorName'] as String?,
+      copiedFromId: json['copiedFromId'] as String?,
+      copiedByCount: (json['copiedByCount'] as num?)?.toInt() ?? 0,
       attemptCount: (json['attemptCount'] as num?)?.toInt() ?? 0,
       bestScore: (json['bestScore'] as num?)?.toDouble(),
       avgScore: (json['avgScore'] as num?)?.toDouble(),

@@ -7,6 +7,8 @@
 - GoRouter with a root navigator and a shell navigator for the five-tab authenticated area.
 - Dio singleton for REST calls; `flutter_secure_storage` stores the bearer token.
 - Socket.IO client for authenticated foreground events. `AppConstants` derives the socket origin and path from `API_BASE_URL`; production resolves to origin `https://84.247.138.71` and path `/smart-study/socket.io`.
+- `AppEnvironment` gives an explicit `API_BASE_URL` highest priority, defaults release builds to `https://84.247.138.71/smart-study`, and keeps loopback/emulator URLs for debug development only.
+- Android release networking depends on `android.permission.INTERNET` in the main manifest. The debug/profile manifests alone do not grant it to a release APK.
 - Shared preferences restore dark mode before the application renders.
 - Equatable domain models with manual `fromJson`, `toJson`, and `copyWith` methods.
 - Google Fonts Manrope theme, shared color/gradient/elevation tokens, reusable UI widgets, fl_chart, cached images, file/image pickers, and animation helpers.
@@ -79,3 +81,5 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 ## Deployment shape
 
 The backend workflow `.github/workflows/deploy.yml` validates `main`, uploads an immutable release as the restricted `deploy` user, runs `prisma migrate deploy`, switches the `current` symlink, restarts `smart-study-backend.service`, checks `/health`, and rolls back the symlink on failure. Production `.env` and uploads live under `/opt/smart-study-backend/shared/`.
+
+The Flutter Android release is built from `my_app` with `flutter build apk --release` for direct installation or `flutter build appbundle --release` for Google Play. Rebuild after URL or manifest changes, inspect the generated APK rather than trusting an old artifact, and install it over the device copy. The current Gradle release block still uses the debug signing configuration, so replace it with a protected upload keystore before external production distribution.

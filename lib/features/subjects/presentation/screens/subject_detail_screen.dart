@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/document_model.dart';
+import '../../../../shared/models/subject_model.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/quiz_card.dart';
 import '../../../../shared/widgets/topic_card.dart';
 import '../../../../shared/widgets/visibility_badge.dart';
 import '../../../documents/presentation/providers/document_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../quizzes/presentation/providers/quiz_provider.dart';
 import '../../../topics/presentation/providers/topic_provider.dart';
 import '../providers/subject_provider.dart';
@@ -23,18 +28,11 @@ class SubjectDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(topicProvider.notifier).loadForSubject(widget.subjectId);
-    });
-  }
-
   Future<void> _createTopic() async {
     final created = await context.push<bool>('/subjects/${widget.subjectId}/topics/create');
     if (created == true && mounted) {
       await ref.read(topicProvider.notifier).loadForSubject(widget.subjectId);
+      ref.invalidate(subjectTopicsProvider(widget.subjectId));
     }
   }
 
@@ -58,15 +56,97 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     }
   }
 
+  Future<void> _copySubject(SubjectModel subject) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Copy “${subject.name}”?'),
+        content: const Text(
+          'A private, editable copy will be added to My Subjects. Only nested content whose owner enabled copying will be included.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.copy_all_outlined),
+            label: const Text('Copy subject'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final response = await ApiClient().dio.post('/subjects/${subject.id}/copy');
+      await ref.read(subjectProvider.notifier).load();
+      if (!mounted) return;
+      final copied = response.data['copied'] as Map<String, dynamic>?;
+      final topics = (copied?['topics'] as num?)?.toInt() ?? 0;
+      final quizzes = (copied?['quizzes'] as num?)?.toInt() ?? 0;
+      final documents = (copied?['documents'] as num?)?.toInt() ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Copied privately: $topics topics, $quizzes quizzes, $documents documents.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(error))));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final subjectId = widget.subjectId;
-    final subject = ref.watch(subjectByIdProvider(subjectId));
-    if (subject == null) return const Scaffold(body: Center(child: Text('Subject not found')));
+    final cachedSubject = ref.watch(subjectByIdProvider(subjectId));
+    final remoteSubject = ref.watch(sharedSubjectDetailProvider(subjectId));
+    final subject = cachedSubject ?? remoteSubject.asData?.value;
+    if (subject == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Subject')),
+        body: remoteSubject.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(
+            child: Padding(
+              padding: AppSpacing.page,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_outline, size: 44, color: AppColors.textMuted),
+                  const SizedBox(height: 12),
+                  Text(
+                    'This subject is unavailable',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'It may be private, removed, or no longer shared with you.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed: () => ref.invalidate(sharedSubjectDetailProvider(subjectId)),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Try again'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          data: (_) => const SizedBox.shrink(),
+        ),
+      );
+    }
 
-    final topics = ref.watch(topicsBySubjectProvider(subjectId));
-    final quizzes = ref.watch(quizProvider).quizzes.where((q) => q.subjectId == subjectId).toList();
-    final docs = ref.watch(documentsBySubjectProvider(subjectId));
+    final currentUserId = ref.watch(authProvider).user?.id;
+    final isOwner = subject.ownerId == currentUserId;
+
+    final topicRequest = ref.watch(subjectTopicsProvider(subjectId));
+    final cachedTopics = ref.watch(topicsBySubjectProvider(subjectId));
+    final topics = topicRequest.asData?.value ?? cachedTopics;
+    final quizRequest = ref.watch(subjectQuizzesProvider(subjectId));
+    final documentRequest = ref.watch(subjectDocumentsProvider(subjectId));
+    final quizzes = quizRequest.asData?.value ??
+        ref.watch(quizProvider).quizzes.where((quiz) => quiz.subjectId == subjectId).toList();
+    final docs = documentRequest.asData?.value ?? ref.watch(documentsBySubjectProvider(subjectId));
     final scored = quizzes.where((q) => q.bestScore != null).toList();
     final avgScore = scored.isEmpty ? 0.0 : scored.fold<double>(0, (s, q) => s + q.bestScore!) / scored.length;
 
@@ -75,7 +155,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(subject.name),
-          actions: [
+          actions: isOwner ? [
             IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => context.push('/subjects/$subjectId/edit')),
             PopupMenuButton<String>(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -93,7 +173,13 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.error))),
               ],
             ),
-          ],
+          ] : subject.allowCopy ? [
+            IconButton(
+              tooltip: 'Copy to My Subjects',
+              onPressed: () => _copySubject(subject),
+              icon: const Icon(Icons.copy_all_outlined),
+            ),
+          ] : null,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Topics'),
@@ -126,13 +212,15 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _StatPill(label: '${topics.length} Topics', icon: Icons.book_outlined),
-                      const SizedBox(width: 8),
                       _StatPill(label: '${quizzes.length} Quizzes', icon: Icons.quiz_outlined),
-                      const SizedBox(width: 8),
                       _StatPill(label: '${avgScore.toStringAsFixed(0)}% Avg', icon: Icons.bar_chart),
+                      if (isOwner && subject.copiedByCount > 0)
+                        _StatPill(label: '${subject.copiedByCount} Copied', icon: Icons.people_alt_outlined),
                     ],
                   ),
                 ],
@@ -142,8 +230,15 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             Expanded(
               child: TabBarView(
                 children: [
-                  topics.isEmpty
-                      ? EmptyState(icon: Icons.topic_outlined, title: 'No topics yet', message: 'Add topics to organize your subject content', actionLabel: 'Add Topic', onAction: _createTopic)
+                  topicRequest.isLoading && topics.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : topicRequest.hasError && topics.isEmpty
+                          ? ErrorState(
+                              message: 'Could not load this subject\'s topics.',
+                              onRetry: () => ref.invalidate(subjectTopicsProvider(subjectId)),
+                            )
+                  : topics.isEmpty
+                      ? EmptyState(icon: Icons.topic_outlined, title: 'No visible topics', message: isOwner ? 'Add topics to organize your subject content' : 'This subject has no topics shared with you', actionLabel: isOwner ? 'Add Topic' : null, onAction: isOwner ? _createTopic : null)
                       : ListView.separated(
                           padding: AppSpacing.list,
                           itemCount: topics.length,
@@ -151,11 +246,18 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           itemBuilder: (_, i) => TopicCard(
                             topic: topics[i],
                             onTap: () => context.push('/subjects/$subjectId/topics/${topics[i].id}'),
-                            onEdit: () => context.push('/topics/${topics[i].id}/edit'),
+                            onEdit: isOwner ? () => context.push('/topics/${topics[i].id}/edit') : null,
                           ),
                         ),
-                  quizzes.isEmpty
-                      ? EmptyState(icon: Icons.quiz_outlined, title: 'No quizzes yet', message: 'Create quizzes to test your knowledge', actionLabel: 'Create Quiz', onAction: () => context.push('/quizzes/create'))
+                  quizRequest.isLoading && quizzes.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : quizRequest.hasError && quizzes.isEmpty
+                          ? ErrorState(
+                              message: 'Could not load this subject\'s quizzes.',
+                              onRetry: () => ref.invalidate(subjectQuizzesProvider(subjectId)),
+                            )
+                  : quizzes.isEmpty
+                      ? EmptyState(icon: Icons.quiz_outlined, title: 'No visible quizzes', message: isOwner ? 'Create quizzes to test your knowledge' : 'This subject has no quizzes shared with you', actionLabel: isOwner ? 'Create Quiz' : null, onAction: isOwner ? () => context.push('/quizzes/create') : null)
                       : ListView.separated(
                           padding: AppSpacing.list,
                           itemCount: quizzes.length,
@@ -163,12 +265,19 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           itemBuilder: (_, i) => QuizCard(
                             quiz: quizzes[i],
                             onPractice: () => context.push('/quizzes/${quizzes[i].id}/attempt'),
-                            onEdit: () => _editQuiz(quizzes[i].id),
-                            onDelete: () => _deleteQuiz(quizzes[i].id, quizzes[i].title),
+                            onEdit: isOwner ? () => _editQuiz(quizzes[i].id) : null,
+                            onDelete: isOwner ? () => _deleteQuiz(quizzes[i].id, quizzes[i].title) : null,
                           ),
                         ),
-                  docs.isEmpty
-                      ? EmptyState(icon: Icons.folder_outlined, title: 'No documents yet', message: 'Upload documents for this subject', actionLabel: 'Upload', onAction: () => context.push('/documents/upload'))
+                  documentRequest.isLoading && docs.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : documentRequest.hasError && docs.isEmpty
+                          ? ErrorState(
+                              message: 'Could not load this subject\'s documents.',
+                              onRetry: () => ref.invalidate(subjectDocumentsProvider(subjectId)),
+                            )
+                  : docs.isEmpty
+                      ? EmptyState(icon: Icons.folder_outlined, title: 'No visible documents', message: isOwner ? 'Upload documents for this subject' : 'This subject has no documents shared with you', actionLabel: isOwner ? 'Upload' : null, onAction: isOwner ? () => context.push('/documents/upload') : null)
                       : ListView.builder(
                           padding: AppSpacing.list,
                           itemCount: docs.length,
@@ -179,7 +288,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             ),
           ],
         ),
-        floatingActionButton: Builder(
+        floatingActionButton: isOwner ? Builder(
           builder: (ctx) {
             final tab = DefaultTabController.of(ctx).index;
             return FloatingActionButton(
@@ -196,7 +305,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               child: const Icon(Icons.add),
             );
           },
-        ),
+        ) : null,
       ),
     );
   }

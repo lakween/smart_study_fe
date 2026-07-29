@@ -135,6 +135,20 @@ class QuizCard extends StatelessWidget {
                     ),
                   ),
                 ],
+                if ((onEdit != null || onDelete != null) && quiz.copiedByCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.people_alt_outlined, size: 14, color: AppColors.violet),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${quiz.copiedByCount} copied',
+                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.violet, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ],
                 const Spacer(),
                 if (onPractice != null)
                   SizedBox(

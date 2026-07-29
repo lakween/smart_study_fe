@@ -1,6 +1,6 @@
 # Smart Study Developer Wiki
 
-This wiki describes the Flutter frontend in `my_app/` and the Express/Prisma backend in `../backend/` as reviewed on 2026-07-29. It is the starting point for future development.
+This wiki describes the Flutter frontend in `my_app/` and the Express/Prisma backend in `../backend/` as reviewed on 2026-07-30. It is the starting point for future development.
 
 ## Wiki map
 
@@ -8,7 +8,7 @@ This wiki describes the Flutter frontend in `my_app/` and the Express/Prisma bac
 - [Frontend modules](frontend-modules.md): every screen, provider, model, route, and important interaction grouped by feature.
 - [Backend and API](backend-api.md): server modules and endpoint contracts grouped by feature.
 - [Data model](data-model.md): Prisma entities, relationships, enums, cascade behavior, and Dart DTO mapping.
-- [Development guide](development-guide.md): how to add features safely, local setup, testing, known gaps, and priorities.
+- [Development guide](development-guide.md): how to add features safely, local and Android release setup, testing, known gaps, and priorities.
 
 ## System at a glance
 

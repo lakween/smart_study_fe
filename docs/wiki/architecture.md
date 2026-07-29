@@ -64,8 +64,14 @@ Nested creation preserves context: subject-to-topic creation fixes the subject I
 The frontend base URL is selected by `AppConstants.baseUrl`:
 
 - `--dart-define=API_BASE_URL=...` wins.
-- Android defaults to `http://10.0.2.2:4000`.
-- Web/desktop defaults to `http://localhost:4000`.
+- Every release build defaults to the deployed HTTPS URL in `AppEnvironment.productionUrl`.
+- Debug Android defaults to `http://10.0.2.2:4000`.
+- Debug web/desktop defaults to `http://localhost:4000`.
+
+These values are compiled into the application. Rebuild and reinstall after a
+URL change. Android release networking also requires
+`android.permission.INTERNET` in `android/app/src/main/AndroidManifest.xml`;
+the development-only debug/profile manifests are not merged into a release.
 
 Dio reads `auth_token` before each request. On an authenticated `401`, one shared refresh operation rotates `refresh_token`, retries the original request once, and signs out only if rotation/retry fails. Logout and password reset revoke server-side refresh sessions. Backend `requireAuth` verifies the access JWT and confirms the user still exists.
 
@@ -74,6 +80,12 @@ The socket client uses the same backend origin and derives its path from the API
 ## Production deployment
 
 Backend pushes to `main` run the GitHub Actions deployment workflow. It builds a versioned release under `/opt/smart-study-backend`, reuses shared environment/uploads, applies Prisma migrations, switches the `current` symlink, restarts the systemd service, checks `/health`, and rolls back the symlink after a failed health check. Server bootstrap, GitHub secrets, restricted deploy-user permissions, and Nginx WebSocket proxying are documented in `backend/DEPLOYMENT.md`.
+
+Flutter produces direct-install APKs under
+`build/app/outputs/flutter-apk/` and Google Play bundles under
+`build/app/outputs/bundle/release/`. The current release build uses the debug
+signing key and is not ready for store distribution until a protected upload
+keystore is configured.
 
 ## Visibility and ownership
 

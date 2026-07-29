@@ -28,13 +28,20 @@ class FriendTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.pageGutter,
-        vertical: 6,
-      ),
-      child: Row(
-        children: [
+    return Semantics(
+      button: onViewProfile != null,
+      label: onViewProfile == null ? friend.fullName : 'View ${friend.fullName}\'s profile',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onViewProfile,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pageGutter,
+              vertical: 10,
+            ),
+            child: Row(
+              children: [
           AvatarWidget(name: friend.fullName, imageUrl: friend.profileImageUrl, radius: 24),
           const SizedBox(width: 12),
           Expanded(
@@ -104,9 +111,12 @@ class FriendTile extends StatelessWidget {
                 child: const Text('Add Friend'),
               ),
             ),
-          ],
-        ],
+                ],
+              ],
+          ),
+        ),
       ),
+    ),
     );
   }
 }

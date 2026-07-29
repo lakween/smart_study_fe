@@ -14,9 +14,9 @@
 
 ## Networking and authentication
 
-`ApiClient` is an initialized singleton wrapping Dio. It selects the backend in this order: `API_BASE_URL` dart define, web/desktop `http://localhost:4000`, or Android emulator `http://10.0.2.2:4000`. The request interceptor reads `auth_token` from secure storage and sends `Authorization: Bearer <token>`.
+`ApiClient` is an initialized singleton wrapping Dio. It selects the backend in this order: a non-empty `API_BASE_URL` Dart define; the deployed `productionUrl` for every release build; then, for debug development, web/desktop `http://localhost:4000` or Android emulator `http://10.0.2.2:4000`. The request interceptor reads `auth_token` from secure storage and sends `Authorization: Bearer <token>`.
 
-The current app constants default to the deployed HTTPS backend when no override is supplied. Always inspect `AppConstants.baseUrl` rather than assuming localhost behavior.
+The current app constants default release builds to the deployed HTTPS backend when no override is supplied. URL changes are compile-time changes, so rebuild and reinstall the APK. Always inspect `AppConstants.baseUrl` rather than assuming localhost behavior.
 
 Use the backend `{ "error": "..." }` message through `apiErrorMessage`; generic 500 responses never expose Prisma/SQL internals and include a request ID. Access and rotating refresh tokens live in secure storage. Dio shares one refresh operation, retries a failed authenticated request once, and signs out only when refresh/retry fails. Socket authentication follows the same refresh-first behavior.
 

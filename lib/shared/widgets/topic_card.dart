@@ -171,6 +171,12 @@ class TopicCard extends StatelessWidget {
                                 label: 'Copyable',
                                 color: AppColors.accent,
                               ),
+                            if ((onEdit != null || onDelete != null) && topic.copiedByCount > 0)
+                              _InfoChip(
+                                icon: Icons.people_alt_outlined,
+                                label: '${topic.copiedByCount} ${topic.copiedByCount == 1 ? 'student' : 'students'} copied',
+                                color: AppColors.violet,
+                              ),
                           ],
                         ),
                         const SizedBox(height: 14),
