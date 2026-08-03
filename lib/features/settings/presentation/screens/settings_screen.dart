@@ -106,8 +106,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: const Text('Cancel')),
           ElevatedButton(
               onPressed: () {
-                if (formKey.currentState!.validate())
+                if (formKey.currentState!.validate()) {
                   Navigator.of(dialogContext).pop(true);
+                }
               },
               child: const Text('Save')),
         ],
@@ -119,15 +120,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'currentPassword': currentCtrl.text,
         'newPassword': newCtrl.text
       });
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Password updated'),
             backgroundColor: AppColors.success));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(apiErrorMessage(e)),
             backgroundColor: AppColors.error));
+      }
     }
   }
 
@@ -161,8 +164,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: const Text('Cancel')),
           ElevatedButton(
               onPressed: () {
-                if (formKey.currentState!.validate())
+                if (formKey.currentState!.validate()) {
                   Navigator.of(dialogContext).pop(true);
+                }
               },
               child: const Text('Save')),
         ],
@@ -176,15 +180,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       });
       ref.read(authProvider.notifier).setUser(
           UserModel.fromJson(res.data['user'] as Map<String, dynamic>));
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Email updated'),
             backgroundColor: AppColors.success));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(apiErrorMessage(e)),
             backgroundColor: AppColors.error));
+      }
     }
   }
 
@@ -200,10 +206,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await ref.read(authProvider.notifier).signOut();
       if (mounted) context.go('/login');
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(apiErrorMessage(e)),
             backgroundColor: AppColors.error));
+      }
     }
   }
 

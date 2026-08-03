@@ -24,7 +24,12 @@ class AuthState {
     this.sessionExpired = false,
   });
 
-  AuthState copyWith({bool? isLoading, String? error, UserModel? user, bool? isAuthenticated, bool? sessionExpired}) {
+  AuthState copyWith(
+      {bool? isLoading,
+      String? error,
+      UserModel? user,
+      bool? isAuthenticated,
+      bool? sessionExpired}) {
     return AuthState(
       isLoading: isLoading ?? this.isLoading,
       error: error,
@@ -67,14 +72,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null, sessionExpired: false);
     try {
-      final res = await _dio.post('/auth/login', data: {'email': email, 'password': password});
+      final res = await _dio
+          .post('/auth/login', data: {'email': email, 'password': password});
       final token = res.data['token'] as String;
       final refreshToken = res.data['refreshToken'] as String;
       final user = UserModel.fromJson(res.data['user'] as Map<String, dynamic>);
       await ApiClient().saveSession(token, refreshToken);
-      state = state.copyWith(isLoading: false, user: user, isAuthenticated: true);
+      state =
+          state.copyWith(isLoading: false, user: user, isAuthenticated: true);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: apiErrorMessage(e, fallback: 'Invalid email or password'));
+      state = state.copyWith(
+          isLoading: false,
+          error: apiErrorMessage(e, fallback: 'Invalid email or password'));
     }
   }
 
@@ -98,9 +107,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final refreshToken = res.data['refreshToken'] as String;
       final user = UserModel.fromJson(res.data['user'] as Map<String, dynamic>);
       await ApiClient().saveSession(token, refreshToken);
-      state = state.copyWith(isLoading: false, user: user, isAuthenticated: true);
+      state =
+          state.copyWith(isLoading: false, user: user, isAuthenticated: true);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: apiErrorMessage(e, fallback: 'Could not create your account'));
+      state = state.copyWith(
+          isLoading: false,
+          error: apiErrorMessage(e, fallback: 'Could not create your account'));
     }
   }
 
@@ -145,10 +157,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<bool> uploadAvatar(String filePath) async {
     try {
-      final formData = FormData.fromMap({'file': await MultipartFile.fromFile(filePath)});
+      final formData =
+          FormData.fromMap({'file': await MultipartFile.fromFile(filePath)});
       final res = await _dio.post('/users/me/avatar', data: formData);
       final user = UserModel.fromJson(res.data['user'] as Map<String, dynamic>);
       state = state.copyWith(user: user);
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: apiErrorMessage(e));
+      return false;
+    }
+  }
+
+  Future<bool> uploadCover(String filePath) async {
+    try {
+      final formData =
+          FormData.fromMap({'file': await MultipartFile.fromFile(filePath)});
+      final res = await _dio.post('/users/me/cover', data: formData);
+      final user = UserModel.fromJson(res.data['user'] as Map<String, dynamic>);
+      state = state.copyWith(user: user, error: null);
       return true;
     } catch (e) {
       state = state.copyWith(error: apiErrorMessage(e));
@@ -170,4 +197,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) => AuthNotifier());
+final authProvider =
+    StateNotifierProvider<AuthNotifier, AuthState>((ref) => AuthNotifier());

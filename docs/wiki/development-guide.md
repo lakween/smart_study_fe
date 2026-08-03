@@ -2,19 +2,24 @@
 
 ## Local startup
 
-Backend directory: `C:\Users\lakwe\Downloads\Smart_Study_App\Smart_Study_App\backend`
+FastAPI backend directory: sibling `..\smart_study_backend`
 
 ```powershell
-npm install
-npx prisma generate
-npx prisma migrate dev
-npm run dev
+cd ..\smart_study_backend
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 4000 --reload
 ```
 
-Create the repeatable large development dataset when testing discovery and scrolling:
+Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, and `PUBLIC_BASE_URL` in `.env`.
+The replacement service uses the existing PostgreSQL schema. Do not run schema
+changes from both Prisma and a future Python migration tool.
+
+Create the repeatable large development dataset when testing discovery and scrolling from the FastAPI backend:
 
 ```powershell
-npm run seed:test-users
+.venv\Scripts\python.exe scripts\seed_test_users.py --database-url-env TEST_DATABASE_URL --require-test-database
 ```
 
 This replaces only `seed.user001@smartstudy.test` through `seed.user100@smartstudy.test`. Every generated account uses password `test@123` and receives 6 subjects, 12 topics, and 24 quizzes.
@@ -41,7 +46,7 @@ Release mode automatically selects the deployed HTTPS URL from
 a different production or staging backend:
 
 ```powershell
-flutter build apk --release --dart-define=API_BASE_URL=https://api.example.com/smart-study
+flutter build apk --release --dart-define=API_BASE_URL=https://chatbot.kadaima.com/smart-study
 ```
 
 Without an override, build with:
@@ -66,18 +71,29 @@ For Google Play, use `flutter build appbundle --release`. The current Gradle
 release configuration uses the debug signing key; configure and securely back
 up a production upload keystore before publishing.
 
+The latest verified direct-install build used:
+
+```powershell
+flutter build apk --release --dart-define=API_BASE_URL=https://chatbot.kadaima.com/smart-study
+```
+
+It passed `flutter analyze` and all 14 Flutter tests, produced a 59.7 MB APK at
+`build/app/outputs/flutter-apk/app-release.apk`, and verified with APK Signature
+Scheme v2. It is release mode but debug-certificate signed, so it is not the final
+Play Store artifact.
+
 ## Adding or changing a module
 
-1. Confirm the Prisma entity and enum representation.
-2. Add a migration for schema changes; do not edit production data manually.
-3. Validate backend input with Zod and enforce ownership/visibility server-side.
-4. Return a stable serializer envelope.
-5. Update the corresponding Dart model with tolerant nullable/numeric parsing.
-6. Put REST work in the feature notifier through `ApiClient().dio`.
-7. Update local state immutably after success.
-8. Add loading, error, empty, and populated UI states.
-9. Register routes in `app_router.dart`; place static routes before overlapping parameter routes.
-10. Test backend route authorization and frontend provider/model behavior.
+1. Confirm the existing PostgreSQL entity, relation, and enum representation.
+2. Avoid schema changes until an Alembic baseline is introduced; never edit production data manually.
+3. Validate input with Pydantic and enforce ownership/visibility in a domain service.
+4. Keep database access in an explicit SQLAlchemy repository and HTTP details in a thin router.
+5. Return the existing serializer envelope without changing Flutter contracts.
+6. Update the corresponding Dart model only when adding a product feature, not for the migration itself.
+7. Put REST work in the feature notifier through `ApiClient().dio`.
+8. Update local state immutably after success.
+9. Add loading, error, empty, and populated UI states.
+10. Test route authorization, response parity, and frontend provider/model behavior.
 
 ## Validation commands
 
@@ -92,9 +108,10 @@ flutter test
 Backend:
 
 ```powershell
-npm run build
-npm test
-npm audit --omit=dev
+.venv\Scripts\python.exe -m ruff format --check app tests
+.venv\Scripts\python.exe -m ruff check app tests
+.venv\Scripts\python.exe -m compileall -q app tests
+.venv\Scripts\python.exe -m pytest -q
 ```
 
 Current focused coverage includes compact-phone navigation/exam/performance widgets, exam and performance DTO parsing, spaced-repetition transitions, exam lifecycle/scoring/release rules, safe error mapping, rate limiting, and enum mapping. Continue adding route-level authorization and database integration coverage.
@@ -104,15 +121,14 @@ Current focused coverage includes compact-phone navigation/exam/performance widg
 High priority:
 
 - Replace the Android release debug signing configuration with a protected upload keystore before external distribution.
+- Configure a newly rotated Gemini or OpenAI key in production before relying on AI quiz generation.
 - Expand utility/widget coverage with database-backed integration tests for authentication, visibility, refresh rotation, quizzes, exams, documents, and friendships.
-- Replace legacy avatar `/uploads/...` URLs with a dedicated, explicitly authorized or intentionally public avatar delivery route.
 - Account deletion still needs an explicit physical-upload retention/cleanup policy; individual document deletion cleans the final file reference.
 - Add database constraints ensuring a question belongs to exactly one quiz or exam.
 
 Functional gaps:
 
 - Password reset has hashed expiring tokens but no production email delivery.
-- Subject/topic/quiz `allowCopy` is displayed/stored but copy endpoints are absent; only documents can be copied.
 - Settings font size, notification toggles, default visibility, terms, and privacy are not fully implemented.
 - Notifications use authenticated foreground Socket.IO events, not OS push; closed apps receive nothing.
 - Document viewing depends on external URL/open behavior; offline caching is absent.
@@ -122,22 +138,20 @@ Security/data notes:
 
 - All content APIs require authentication, including public content.
 - Uploads validate supported extensions and PDF/PNG/JPEG signatures, then require authenticated file access.
-- Development may allow broad CORS; production requires explicit configured origins.
+- Development may allow broad CORS; restrict production to explicit origins before enabling a browser client.
 - Password reset tokens are hashed and expire; successful reset revokes refresh sessions.
 - Account and subject deletion cascade broadly; keep confirmations and add integration tests.
 
 ## Recommended next development order
 
-1. Database-backed API integration tests.
-2. Complete settings persistence and application.
-3. Add a production email provider for password-reset delivery; development may return/log the reset token.
-4. Copy workflows for subjects/topics/quizzes, or remove unused flags.
-5. Aggregate/paginate large document and analytics histories.
-6. Account-level physical-upload cleanup and the question-parent database constraint.
+1. Add a production email provider for password-reset delivery.
+2. Expand database-backed API and end-to-end Flutter coverage.
+3. Complete settings persistence, upload cleanup, and database constraints.
+4. Replace Android debug signing/package identity with a protected production upload key and final application ID.
 
 ## Production deployment
 
-The backend repository contains `.github/workflows/deploy.yml` for automatic deployment after `main` passes validation. It uses versioned releases, shared production data, Prisma migrations, a restricted deployment user, systemd, a health check, and automatic application rollback. Follow [`backend/DEPLOYMENT.md`](../../../backend/DEPLOYMENT.md) for the required Ubuntu, SSH, GitHub secret, and Nginx WebSocket configuration.
+FastAPI production is live at `https://chatbot.kadaima.com/smart-study`. Source is cloned at `/opt/smart-study-backend-v2`; immutable runtime releases, backups, shared `.env`, and uploads live at `/opt/smart-study-backend`. A push to backend `main` automatically runs Python 3.12 formatting, lint, compilation, entry-point import, and tests before uploading/activating the commit over the restricted `deploy` account. Monitor the GitHub Actions `validate` and `deploy` jobs and confirm the public `/health/ready` response. Use systemd for the web/scheduler, never edit `current` directly, and do not bypass a failed workflow with manual source edits. Express/PM2 and port `4001` were removed after cutover. See [the completed migration record](fastapi-migration.md) and backend `DEPLOYMENT.md` for rollback details.
 
 ## Keeping this wiki current
 

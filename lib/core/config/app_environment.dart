@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 class AppEnvironment {
   AppEnvironment._();
 
-  static const String productionUrl = 'https://84.247.138.71/smart-study';
+  static const String productionUrl = 'https://chatbot.kadaima.com/smart-study';
 
   static const String _environment = String.fromEnvironment(
     'APP_ENV',

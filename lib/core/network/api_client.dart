@@ -65,6 +65,7 @@ class ApiClient {
 
     if (kDebugMode) {
       _dio.interceptors.add(LogInterceptor(
+        requestHeader: false,
         requestBody: false,
         responseBody: false,
         error: true,

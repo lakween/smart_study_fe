@@ -14,14 +14,15 @@
 
 ## Backend stack
 
-- Node.js, Express, TypeScript, Zod, Prisma, PostgreSQL.
-- Socket.IO on the same HTTP server for authenticated foreground events.
+- Python, FastAPI, Uvicorn, Pydantic 2, async SQLAlchemy/Psycopg 3, PostgreSQL.
+- The existing Prisma-created schema and data are reused; the legacy Express runtime has been removed after cutover.
+- `python-socketio` runs on the same ASGI origin for authenticated foreground events.
 - JWT bearer authentication; passwords use bcrypt.
-- Multer handles disk uploads and memory-only AI inputs.
-- A server-side environment switch selects OpenAI Responses or Gemini for strictly structured quiz generation.
+- FastAPI multipart handlers validate upload size, extension, and magic bytes. Documents use authenticated delivery; avatars use a separate explicit public route.
+- Environment-selected OpenAI/Gemini quiz generation is implemented; production requires a rotated provider key in the shared `.env`.
 - Central JSON errors use `{ "error": "message" }`.
 
-Required backend variables are `DATABASE_URL` and `JWT_SECRET`. Production also requires explicit `CORS_ORIGIN`; JWT secrets shorter than 32 characters and wildcard production CORS fail at startup. Session/reset lifetime is controlled by `JWT_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_DAYS`, and `PASSWORD_RESET_TTL_MINUTES`.
+Required backend variables are `DATABASE_URL` and `JWT_SECRET`. Production should use an explicit `CORS_ORIGIN` before serving browser clients and a high-entropy JWT secret. Session/reset lifetime is controlled by `JWT_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_DAYS`, and `PASSWORD_RESET_TTL_MINUTES`.
 
 ## Navigation
 
@@ -40,7 +41,7 @@ Drill-down routes:
 - Documents: `/documents/upload`, `/documents/:documentId/view`
 - Quizzes: `/quizzes`, `/quizzes/create`, `/quizzes/:quizId/edit`, `/quizzes/:quizId/attempt`, `/quizzes/:quizId/result/:attemptId`
 - AI: `/ai-quiz`
-- Exams: `/exams/create`, `/exams/:examId`, `/exams/:examId/attempt`, `/exams/:examId/result`
+- Exams: `/exams/create`, `/exams/:examId`, `/exams/:examId/contribute`, `/exams/:examId/attempt`, `/exams/:examId/result`
 - Social/profile: `/friends/requests`, `/friends/find`, `/users/:userId/profile`, `/profile/edit`
 - Utility: `/notifications`, `/dashboard`, `/dashboard?section=memory`, `/settings`
 
@@ -73,13 +74,13 @@ URL change. Android release networking also requires
 `android.permission.INTERNET` in `android/app/src/main/AndroidManifest.xml`;
 the development-only debug/profile manifests are not merged into a release.
 
-Dio reads `auth_token` before each request. On an authenticated `401`, one shared refresh operation rotates `refresh_token`, retries the original request once, and signs out only if rotation/retry fails. Logout and password reset revoke server-side refresh sessions. Backend `requireAuth` verifies the access JWT and confirms the user still exists.
+Dio reads `auth_token` before each request. On an authenticated `401`, one shared refresh operation rotates `refresh_token`, retries the original request once, and signs out only if rotation/retry fails. Logout and password reset revoke server-side refresh sessions. FastAPI's authentication dependency verifies the access JWT and confirms the user still exists.
 
 The socket client uses the same backend origin and derives its path from the API URL. It sends the access JWT in the handshake and reconnects automatically. An expired socket JWT first rotates the refresh session and reconnects with the new access token; invalid sessions trigger sign-out. Authenticated rooms receive `notification:new`, `friendship:changed`, and `exam:changed` events.
 
 ## Production deployment
 
-Backend pushes to `main` run the GitHub Actions deployment workflow. It builds a versioned release under `/opt/smart-study-backend`, reuses shared environment/uploads, applies Prisma migrations, switches the `current` symlink, restarts the systemd service, checks `/health`, and rolls back the symlink after a failed health check. Server bootstrap, GitHub secrets, restricted deploy-user permissions, and Nginx WebSocket proxying are documented in `backend/DEPLOYMENT.md`.
+FastAPI production is live at `https://chatbot.kadaima.com/smart-study`. Nginx proxies to loopback port `4000`; the web and scheduler run as `smart-study-fastapi.service` and `smart-study-scheduler.service`. Releases are immutable under `/opt/smart-study-backend/releases`, while `.env` and uploads are shared. Backend `main` pushes run the installed GitHub Actions validation/deploy workflow; activation runs checksum migrations and `/health/ready`, then atomically updates `/opt/smart-study-backend/current`. The former Express PM2 process and port `4001` are removed.
 
 Flutter produces direct-install APKs under
 `build/app/outputs/flutter-apk/` and Google Play bundles under

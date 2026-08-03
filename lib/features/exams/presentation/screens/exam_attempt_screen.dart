@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/exam_model.dart';
 import '../../../../shared/models/question_model.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../providers/exam_provider.dart';
 
@@ -147,11 +148,9 @@ class _ExamAttemptScreenState extends ConsumerState<ExamAttemptScreen>
       return;
     }
     setState(() => _submitting = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ref.read(examProvider).error ?? 'Submission failed.'),
-        backgroundColor: AppColors.error,
-      ),
+    AppMessage.error(
+      context,
+      ref.read(examProvider).error ?? 'Submission failed.',
     );
     _refreshRemaining();
   }

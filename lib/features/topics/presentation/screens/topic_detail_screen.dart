@@ -12,6 +12,7 @@ import '../../../../shared/widgets/shared_content_context_banner.dart';
 import '../../../../shared/widgets/visibility_badge.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../documents/presentation/providers/document_provider.dart';
+import '../../../exams/presentation/widgets/related_exams_section.dart';
 import '../../../quizzes/presentation/providers/quiz_provider.dart';
 import '../../../subjects/presentation/providers/subject_provider.dart';
 import '../providers/topic_provider.dart';
@@ -105,7 +106,7 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
     final docs = ref.watch(documentsByTopicProvider(topicId));
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(topic.name),
@@ -122,8 +123,11 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                   ),
                 ]
               : null,
-          bottom: const TabBar(
-              tabs: [Tab(text: 'Quizzes'), Tab(text: 'Documents')]),
+          bottom: const TabBar(tabs: [
+            Tab(text: 'Quizzes'),
+            Tab(text: 'Exams'),
+            Tab(text: 'Documents'),
+          ]),
         ),
         body: Column(
           children: [
@@ -235,6 +239,10 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
                                 : null,
                           ),
                         ),
+                  RelatedExamsSection(
+                    subjectId: widget.subjectId,
+                    topicId: topicId,
+                  ),
                   docs.isEmpty
                       ? EmptyState(
                           icon: Icons.folder_outlined,

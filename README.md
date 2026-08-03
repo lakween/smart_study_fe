@@ -30,6 +30,13 @@ Quiz, friend, and notification lists load incrementally. Subjects support
 search, sorting, visibility filters, and archive/restore. Friendship changes
 arrive live through Socket.IO in addition to durable notification history.
 
+Friend exams use a blind collaborative lobby: the organizer participates,
+every accepted friend contributes the same user-entered positive number of
+private questions, duplicates are rejected without revealing another person's
+content, and the organizer can publish only when everyone is ready. Subject and
+topic classification is optional; when selected, accessible related exams also
+appear in those detail screens.
+
 ## Run the application
 
 Install packages and start Flutter from this directory:
@@ -174,5 +181,11 @@ The module-wise developer wiki starts at
 backend endpoints, data models, architecture, known gaps, and the recommended
 development workflow.
 
-Production backend setup and automatic deployment are documented in
-[`../backend/DEPLOYMENT.md`](../backend/DEPLOYMENT.md).
+The completed Express-to-FastAPI migration record, local commands, production
+topology, and validation history are documented in
+[`docs/wiki/fastapi-migration.md`](docs/wiki/fastapi-migration.md). Production is
+served at `https://chatbot.kadaima.com/smart-study` by Nginx, systemd-managed
+FastAPI/Socket.IO and scheduler services; the former Express PM2 runtime is removed.
+Backend pushes to `main` are validated and deployed automatically by
+`.github/workflows/deploy.yml`, with database migration, readiness checking, and
+application rollback handled by the immutable-release deployment script.

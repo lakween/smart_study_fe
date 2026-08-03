@@ -12,6 +12,7 @@ import '../../../../shared/models/subject_model.dart';
 import '../../../../shared/models/topic_model.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/profile_cover.dart';
 import '../../../../shared/widgets/content_copy_destination_dialog.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/quiz_card.dart';
@@ -399,16 +400,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             SliverToBoxAdapter(
               child: Column(
                 children: [
-                  Container(
-                    height: 100,
-                    decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [
-                      AppColors.primary.withValues(alpha: 0.7),
-                      AppColors.primaryLight
-                    ])),
-                  ),
+                  ProfileCover(imageUrl: user.coverImageUrl, height: 140),
                   Transform.translate(
-                    offset: const Offset(0, -40),
+                    offset: const Offset(0, -46),
                     child: Column(
                       children: [
                         AvatarWidget(

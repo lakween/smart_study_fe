@@ -2,7 +2,7 @@
 
 ## Enums
 
-Prisma uses uppercase values; serializers/mappers convert to frontend values.
+PostgreSQL stores uppercase enum values; FastAPI serializers/mappers convert them to frontend values. The schema was originally created by Prisma and its migrations remain historical evidence during the migration.
 
 - `StudyLevel`: SCHOOL, UNDERGRADUATE, POSTGRADUATE, SELF_LEARNER.
 - `Visibility`: PRIVATE, FRIENDS_ONLY, PUBLIC.
@@ -45,6 +45,8 @@ User
 - `QuestionAnswer`: selected option and correctness for one attempted question.
 - `SpacedRepetition`: one row per user+quiz, with topic, score, interval, and next date.
 - `Exam`: subject/topic, organizer, type/status/timing, copied questions and participants.
+- Exam subject/topic foreign keys are nullable and use `ON DELETE SET NULL`, so a general exam needs no classification and an existing exam survives classification deletion. Indexed nullable keys support related-exam tabs.
+- Collaborative exams set nullable `questionsPerParticipant` and `contributionInstructions`. `ExamQuestionContribution` stores each participant's private question/options/answer and a Unicode-normalized per-exam duplicate key until publish copies the complete set into `Question` snapshots.
 - `ExamParticipant`: unique exam+user result and completion state.
 - `ExamInvitation`: unique exam+invitee response with invitation/response timestamps.
 - `ExamAttempt`: one server-timed attempt per exam+user with stable question order and score summary.
@@ -65,4 +67,4 @@ Backend serializers are the wire-format authority. They add names/counts/statist
 - User statistics.
 - Performance reports are derived response models rather than database entities. They combine completion-dated quiz/exam attempts, spaced-repetition rows, period comparisons, consistency, rankings, and recommendations.
 
-When adding a database field, update Prisma migration, route include/select, serializer, Dart model, provider, and affected UI together.
+Do not edit the production schema ad hoc. A database field change requires a new ordered checksum migration, FastAPI repository/service/serializer updates, corresponding Dart model/provider/UI changes, compatibility tests, a PostgreSQL backup, and a backward-compatible deployment plan.

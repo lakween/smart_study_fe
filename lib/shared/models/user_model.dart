@@ -67,6 +67,7 @@ class UserModel extends Equatable {
   final String? university;
   final StudyLevel studyLevel;
   final String? profileImageUrl;
+  final String? coverImageUrl;
   final bool showFriendsOnlyPlaceholders;
   final int subjectCount;
   final int quizCount;
@@ -83,6 +84,7 @@ class UserModel extends Equatable {
     this.university,
     required this.studyLevel,
     this.profileImageUrl,
+    this.coverImageUrl,
     this.showFriendsOnlyPlaceholders = true,
     this.subjectCount = 0,
     this.quizCount = 0,
@@ -102,6 +104,7 @@ class UserModel extends Equatable {
       studyLevel: StudyLevelExt.fromString(
           json['studyLevel'] as String? ?? 'undergraduate'),
       profileImageUrl: json['profileImageUrl'] as String?,
+      coverImageUrl: json['coverImageUrl'] as String?,
       showFriendsOnlyPlaceholders:
           json['showFriendsOnlyPlaceholders'] as bool? ?? true,
       subjectCount: (json['subjectCount'] as num?)?.toInt() ?? 0,
@@ -122,6 +125,7 @@ class UserModel extends Equatable {
       'university': university,
       'studyLevel': studyLevel.name,
       'profileImageUrl': profileImageUrl,
+      'coverImageUrl': coverImageUrl,
       'showFriendsOnlyPlaceholders': showFriendsOnlyPlaceholders,
       'subjectCount': subjectCount,
       'quizCount': quizCount,
@@ -140,6 +144,7 @@ class UserModel extends Equatable {
     String? university,
     StudyLevel? studyLevel,
     String? profileImageUrl,
+    String? coverImageUrl,
     bool? showFriendsOnlyPlaceholders,
     int? subjectCount,
     int? quizCount,
@@ -156,6 +161,7 @@ class UserModel extends Equatable {
       university: university ?? this.university,
       studyLevel: studyLevel ?? this.studyLevel,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       showFriendsOnlyPlaceholders:
           showFriendsOnlyPlaceholders ?? this.showFriendsOnlyPlaceholders,
       subjectCount: subjectCount ?? this.subjectCount,
@@ -176,6 +182,7 @@ class UserModel extends Equatable {
         university,
         studyLevel,
         profileImageUrl,
+        coverImageUrl,
         showFriendsOnlyPlaceholders,
         subjectCount,
         quizCount,

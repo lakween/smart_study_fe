@@ -1,5 +1,10 @@
 # Backend Modules and API
 
+This document defines the production Flutter-facing FastAPI contract. All listed
+modules are implemented in the sibling `smart_study_backend`; the legacy Express
+runtime has been removed. See [FastAPI migration](fastapi-migration.md) for the
+completed cutover record.
+
 All routes except registration, login, refresh/logout, forgot/reset password, and health require `Authorization: Bearer <JWT>`. Document files are not public static assets; `GET /documents/:id/file` authenticates and authorizes every download.
 
 Registration/login return `{ token, refreshToken, user }`. `POST /auth/refresh`
@@ -12,7 +17,7 @@ successful password reset revokes all refresh sessions.
 - `GET /health` -> `{ status: "ok" }`
 - `GET /documents/:id/file` serves a persisted upload only after authentication and visibility authorization. There is no public static uploads route.
 
-## Authentication (`auth.routes.ts`)
+## Authentication (`smart_study_backend/app/routers/auth.py`)
 
 - `POST /auth/register`: `fullName`, `email`, `password` (8+), optional `university`, `studyLevel`; returns `{ token, refreshToken, user }`.
 - `POST /auth/login`: `email`, `password`; returns `{ token, refreshToken, user }`.
@@ -22,16 +27,18 @@ successful password reset revokes all refresh sessions.
 - `POST /auth/forgot-password`: always returns success. Development mode logs and may return `devResetToken`; no email provider exists.
 - `POST /auth/reset-password`: `email`, `token`, `newPassword`.
 
-## Users/profile (`users.routes.ts`)
+## Users/profile (`smart_study_backend/app/routers/users.py`)
 
 - `PATCH /users/me`: partial `fullName`, `bio`, `university`, `studyLevel`.
-- `POST /users/me/avatar`: multipart field `file`. It currently stores a legacy `/uploads/...` profile URL; a dedicated delivery route/policy is still required because the application no longer exposes the raw uploads directory.
+- `POST /users/me/avatar`: multipart image field `file`; returns a dedicated public profile-media URL. Raw uploads are not exposed.
+- `POST /users/me/cover`: multipart JPG/PNG field `file`; returns a cache-versioned public cover URL.
+- `GET /users/:id/avatar` and `GET /users/:id/cover`: explicit public profile-media delivery; document uploads remain authenticated.
 - `POST /users/me/change-password`: `currentPassword`, `newPassword`.
 - `POST /users/me/change-email`: `newEmail`, `password`.
 - `DELETE /users/me`: cascades account-owned records.
 - `GET /users/:userId/profile`: user, friendship status, and visible subjects/quizzes.
 
-## Subjects (`subjects.routes.ts`)
+## Subjects (`smart_study_backend/app/routers/subjects.py`)
 
 - `GET /subjects?visibility=&search=&archived=&sort=&page=&limit=` -> paginated owner-only subjects with batched viewer progress.
 - `GET /subjects/:id` -> `{ subject }` after visibility authorization.
@@ -39,14 +46,14 @@ successful password reset revokes all refresh sessions.
 - `PATCH /subjects/:id`: owner-only partial update/archive. Narrowing visibility also narrows children transactionally.
 - `DELETE /subjects/:id`: owner-only; cascades topics, documents, quizzes, exams, and dependent records.
 
-## Topics (`topics.routes.ts`)
+## Topics (`smart_study_backend/app/routers/topics.py`)
 
 - `GET /topics?subjectId=...`: required subject ID, with quiz count and revision data.
 - `GET /topics/:id`.
 - `POST /topics`: `subjectId`, normalized name/description, visibility, allowCopy; subject owner only.
 - `PATCH /topics/:id`, `DELETE /topics/:id`: subject owner only.
 
-## Documents (`documents.routes.ts`)
+## Documents (`smart_study_backend/app/routers/documents.py`)
 
 - `GET /documents?subjectId=&topicId=` and `GET /documents/:id` enforce visibility.
 - `POST /documents`: multipart upload by the subject owner. Topic membership, visibility hierarchy, extension, and PDF/PNG/JPEG file signature are verified.
@@ -57,7 +64,7 @@ successful password reset revokes all refresh sessions.
 
 Uploads allow PDF/JPG/JPEG/PNG to 10 MB. Disk files receive UUID names.
 
-## Quizzes (`quizzes.routes.ts`)
+## Quizzes (`smart_study_backend/app/routers/quizzes.py`)
 
 - `GET /quizzes?filter=mine|friends|public|ai&subjectId=&topicId=&search=&page=&limit=` returns batched stats and pagination.
 - `GET /quizzes/:id`.
@@ -72,15 +79,20 @@ Solutions are hidden from non-owners until a successful submission. Attempt,
 session claim, answers, and spaced repetition update transactionally; notification
 delivery failure cannot invalidate an already-recorded attempt.
 
-## AI quiz (`aiQuiz.routes.ts`)
+## AI quiz (`smart_study_backend/app/routers/ai_quiz.py`)
 
 - `POST /ai-quiz/generate`: multipart `file`, `questionCount` (1-30), difficulty, language, and optional learning objective.
 - `POST /ai-quiz/regenerate`: regenerates one question while avoiding the other supplied question texts.
 
 The provider selected by `AI_PROVIDER` returns structured output with supporting source excerpts. The backend validates required fields, unique options, and duplicate questions, and samples the start, middle, and end of large PDFs. OpenAI and Gemini keys/models are configured independently.
 
-## Exams (`exams.routes.ts`)
+## Exams (`smart_study_backend/app/routers/exams.py`)
 
+- New friend exams can be private collaborative lobbies. `POST /exams` accepts any positive `questionsPerParticipant` value and `contributionInstructions`; the organizer and accepted friends each submit exactly that quota.
+- `GET /exams/:id/contributions` returns only the authenticated participant's private contribution, and `PUT /exams/:id/contributions` atomically replaces it. Unicode-normalized duplicates are rejected without revealing another participant's question.
+- Collaborative `POST /exams/:id/publish` is organizer-only and requires all invitations resolved, at least two participants, and every participant ready. It snapshots all contributions into one common exam paper.
+- `subjectId` and `topicId` are optional for collaborative exams. `GET /exams/related?subjectId=&topicId=` returns authenticated-user-accessible exams for subject/topic detail tabs. Individual exams require a topic-backed question bank.
+- Participant and contribution arrays have no product-level maximum; questions-per-participant is any positive integer entered by the organizer.
 - `GET /exams?tab=mine|invited&page=&limit=` and `GET /exams/:id`: sanitized summaries; solutions are never included. Organizer summaries also expose accepted/pending/declined invitation totals, while all accessible summaries include participant submission progress.
 - `POST /exams`: creates and optionally publishes an exam with duration, question count, pass mark, shuffle setting, schedule, and accepted-friend invitees.
 - `PATCH/DELETE /exams/:id` and `POST /exams/:id/publish`: draft-only management.
@@ -93,7 +105,7 @@ The provider selected by `AI_PROVIDER` returns structured output with supporting
 
 Published questions are snapshot copies sampled from the topic quiz pool. Correct answers and explanations stay server-side during an attempt. Individual results release after submission; friend-exam results release after the common close time. A 30-second lifecycle scan starts scheduled exams, auto-submits overdue saved answers, expires invitations, closes exams, and creates durable notifications. The compatibility `POST /exams/:id/start` route only creates/resumes a secure attempt for older clients.
 
-## Friends (`friends.routes.ts`)
+## Friends (`smart_study_backend/app/routers/friends.py`)
 
 - `GET /friends?q=&page=&limit=`: paginated accepted friends.
 - `GET /friends/search?q=&page=&limit=`: paginated user discovery/search with relationship, mutual count, total, and `hasMore`.
@@ -108,7 +120,7 @@ Friend metadata and mutual counts are batch loaded. Every request/accept/decline
 cancel/remove emits `friendship:changed` to both users; send and accept also
 create durable notifications. Duplicate relationships return 409.
 
-## Notifications (`notifications.routes.ts`)
+## Notifications (`smart_study_backend/app/routers/notifications.py`)
 
 - `GET /notifications?page=&limit=`: newest-first paginated history.
 - `POST /notifications/read-all`.
@@ -117,14 +129,14 @@ create durable notifications. Duplicate relationships return 409.
 
 The HTTP server also hosts Socket.IO. A JWT supplied in the socket handshake authenticates the connection, which joins `user:<userId>`. Private-room events are `notification:new`, `friendship:changed`, and `exam:changed`.
 
-## Dashboard (`dashboard.routes.ts`)
+## Dashboard (`smart_study_backend/app/routers/dashboard.py`)
 
 - `GET /dashboard/home`: totals, a `revisionSummary` (`dueNow`, next-three-day `upcoming`, and `activePlans`), revision items due within three days, five recent quiz attempts, and last subject/topic. Revision quiz DTOs include the backend-owned `revisionIntervalDays`, last score, and next revision date. Recent attempts include subject/topic context, AI origin, practice mode, correctness, score, and server-recorded duration.
 - `GET /dashboard/performance?period=all|week|month`: typed performance summary with prior-period score change, pass rate, study minutes, daily quiz trend, real last-seven-day activity and streaks, navigable subject/topic rankings, memory counts and stage distribution, actionable revision queue, recommendations, insights, and exam-attempt history filtered by submission time. Compatibility fields remain for older clients.
 
 ## Error/status conventions
 
-- Zod validation errors return 400 with safe field-level details.
-- Known Prisma conflicts/not-found conditions map to safe 409/404 responses; unknown server errors return a request ID without exposing SQL or Prisma internals.
+- Pydantic validation errors return 400 with safe field-level details.
+- Known database conflicts/not-found conditions map to safe 409/404 responses; unknown server errors return a request ID without exposing SQL internals.
 - Explicit `ApiError` responses use the specified status and `{ error }`.
 - Creation normally returns 201; successful mutations return JSON rather than 204.

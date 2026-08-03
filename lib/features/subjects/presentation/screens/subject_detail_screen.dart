@@ -18,6 +18,7 @@ import '../../../../shared/widgets/shared_content_context_banner.dart';
 import '../../../../shared/widgets/topic_card.dart';
 import '../../../../shared/widgets/visibility_badge.dart';
 import '../../../documents/presentation/providers/document_provider.dart';
+import '../../../exams/presentation/widgets/related_exams_section.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../quizzes/presentation/providers/quiz_provider.dart';
 import '../../../topics/presentation/providers/topic_provider.dart';
@@ -296,7 +297,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
         : scored.fold<double>(0, (s, q) => s + q.bestScore!) / scored.length;
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(subject.name),
@@ -349,6 +350,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             tabs: [
               Tab(text: 'Topics'),
               Tab(text: 'Quizzes'),
+              Tab(text: 'Exams'),
               Tab(text: 'Documents'),
             ],
           ),
@@ -511,6 +513,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                         : null,
                                   ),
                                 ),
+                  RelatedExamsSection(subjectId: subjectId),
                   documentRequest.isLoading && docs.isEmpty
                       ? const Center(child: CircularProgressIndicator())
                       : documentRequest.hasError && docs.isEmpty
@@ -555,6 +558,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                         _createTopic();
                       } else if (tab == 1) {
                         context.push('/quizzes/create');
+                      } else if (tab == 2) {
+                        context.push('/exams/create');
                       } else {
                         context.push('/documents/upload');
                       }

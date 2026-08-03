@@ -85,6 +85,7 @@ class ExamParticipant extends Equatable {
   final double? score;
   final int? timeTakenSeconds;
   final bool hasCompleted;
+  final int contributionCount;
 
   const ExamParticipant({
     required this.userId,
@@ -93,6 +94,7 @@ class ExamParticipant extends Equatable {
     this.score,
     this.timeTakenSeconds,
     this.hasCompleted = false,
+    this.contributionCount = 0,
   });
 
   factory ExamParticipant.fromJson(Map<String, dynamic> json) {
@@ -103,6 +105,7 @@ class ExamParticipant extends Equatable {
       score: (json['score'] as num?)?.toDouble(),
       timeTakenSeconds: (json['timeTakenSeconds'] as num?)?.toInt(),
       hasCompleted: json['hasCompleted'] as bool? ?? false,
+      contributionCount: (json['contributionCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -114,15 +117,16 @@ class ExamParticipant extends Equatable {
         score,
         timeTakenSeconds,
         hasCompleted,
+        contributionCount,
       ];
 }
 
 class ExamModel extends Equatable {
   final String id;
   final String title;
-  final String subjectId;
+  final String? subjectId;
   final String subjectName;
-  final String topicId;
+  final String? topicId;
   final String topicName;
   final ExamType type;
   final ExamStatus status;
@@ -136,6 +140,10 @@ class ExamModel extends Equatable {
   final DateTime? publishedAt;
   final List<QuestionModel> questions;
   final String organizerId;
+  final int? questionsPerParticipant;
+  final String? contributionInstructions;
+  final int myContributionCount;
+  final bool contributionsReady;
   final ExamInvitationStatus? invitationStatus;
   final ExamAttemptStatus? attemptStatus;
   final int invitedCount;
@@ -149,9 +157,9 @@ class ExamModel extends Equatable {
   const ExamModel({
     required this.id,
     required this.title,
-    required this.subjectId,
+    this.subjectId,
     required this.subjectName,
-    required this.topicId,
+    this.topicId,
     required this.topicName,
     required this.type,
     required this.status,
@@ -165,6 +173,10 @@ class ExamModel extends Equatable {
     this.publishedAt,
     this.questions = const [],
     required this.organizerId,
+    this.questionsPerParticipant,
+    this.contributionInstructions,
+    this.myContributionCount = 0,
+    this.contributionsReady = false,
     this.invitationStatus,
     this.attemptStatus,
     this.invitedCount = 0,
@@ -184,6 +196,7 @@ class ExamModel extends Equatable {
   bool get hasSubmitted =>
       attemptStatus == ExamAttemptStatus.submitted ||
       attemptStatus == ExamAttemptStatus.autoSubmitted;
+  bool get isCollaborative => questionsPerParticipant != null;
 
   factory ExamModel.fromJson(Map<String, dynamic> json) {
     final questions = (json['questions'] as List<dynamic>? ?? [])
@@ -192,9 +205,9 @@ class ExamModel extends Equatable {
     return ExamModel(
       id: json['id'] as String,
       title: json['title'] as String,
-      subjectId: json['subjectId'] as String,
+      subjectId: json['subjectId'] as String?,
       subjectName: json['subjectName'] as String? ?? '',
-      topicId: json['topicId'] as String,
+      topicId: json['topicId'] as String?,
       topicName: json['topicName'] as String? ?? '',
       type: ExamTypeExt.fromString(json['type'] as String? ?? 'individual'),
       status:
@@ -211,6 +224,11 @@ class ExamModel extends Equatable {
       publishedAt: _date(json['publishedAt']),
       questions: questions,
       organizerId: json['organizerId'] as String,
+      questionsPerParticipant:
+          (json['questionsPerParticipant'] as num?)?.toInt(),
+      contributionInstructions: json['contributionInstructions'] as String?,
+      myContributionCount: (json['myContributionCount'] as num?)?.toInt() ?? 0,
+      contributionsReady: json['contributionsReady'] as bool? ?? false,
       invitationStatus: ExamInvitationStatusExt.fromString(
         json['invitationStatus'] as String?,
       ),
@@ -248,6 +266,10 @@ class ExamModel extends Equatable {
         resultRelease,
         publishedAt,
         organizerId,
+        questionsPerParticipant,
+        contributionInstructions,
+        myContributionCount,
+        contributionsReady,
         invitationStatus,
         attemptStatus,
         invitedCount,

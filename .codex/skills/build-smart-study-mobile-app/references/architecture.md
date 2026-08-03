@@ -6,8 +6,8 @@
 - Riverpod (`flutter_riverpod`) with `ProviderScope`, `StateNotifierProvider`, `StateProvider`, and `Provider.family`.
 - GoRouter with a root navigator and a shell navigator for the five-tab authenticated area.
 - Dio singleton for REST calls; `flutter_secure_storage` stores the bearer token.
-- Socket.IO client for authenticated foreground events. `AppConstants` derives the socket origin and path from `API_BASE_URL`; production resolves to origin `https://84.247.138.71` and path `/smart-study/socket.io`.
-- `AppEnvironment` gives an explicit `API_BASE_URL` highest priority, defaults release builds to `https://84.247.138.71/smart-study`, and keeps loopback/emulator URLs for debug development only.
+- Socket.IO client for authenticated foreground events. `AppConstants` derives the socket origin and path from `API_BASE_URL`; production resolves to origin `https://chatbot.kadaima.com` and path `/smart-study/socket.io`.
+- `AppEnvironment` gives an explicit `API_BASE_URL` highest priority, defaults release builds to `https://chatbot.kadaima.com/smart-study`, and keeps loopback/emulator URLs for debug development only.
 - Android release networking depends on `android.permission.INTERNET` in the main manifest. The debug/profile manifests alone do not grant it to a release APK.
 - Shared preferences restore dark mode before the application renders.
 - Equatable domain models with manual `fromJson`, `toJson`, and `copyWith` methods.
@@ -34,7 +34,7 @@ lib/
 
 Features: auth, dashboard, subjects, topics, documents, quizzes, ai_quiz, exams, friends, profile, notifications, and settings.
 
-The paired backend is a separate repository at `../backend`: Express/TypeScript, Prisma/PostgreSQL, JWT authentication, Multer uploads, environment-selected OpenAI/Gemini quiz generation, Socket.IO, and a versioned GitHub Actions deployment workflow.
+The production backend is the sibling `../smart_study_backend/`: FastAPI/Uvicorn, Pydantic, async SQLAlchemy/Psycopg, the existing PostgreSQL schema, JWT authentication, validated uploads, AI providers, schedulers, and authenticated `python-socketio`. The legacy Express/TypeScript repository at `../backend` is historical read-only evidence; Express has been removed from production.
 
 ## Navigation map
 
@@ -42,7 +42,7 @@ Authentication: `/splash`, `/login`, `/register`, `/forgot-password`.
 
 Shell tabs: `/home/dashboard`, `/home/subjects`, `/home/exams`, `/home/friends`, `/home/profile`.
 
-Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/detail/attempt/result; friend requests, friend discovery, and user profile; notifications, performance dashboard, settings, and profile edit.
+Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/detail/private-contribution/attempt/result; friend requests, friend discovery, and user profile; notifications, performance dashboard, settings, and profile edit.
 
 Keep route parameter names aligned with screen constructor requirements. Add specific static routes before overlapping parameterized routes when route matching could be ambiguous.
 
@@ -80,6 +80,6 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 
 ## Deployment shape
 
-The backend workflow `.github/workflows/deploy.yml` validates `main`, uploads an immutable release as the restricted `deploy` user, runs `prisma migrate deploy`, switches the `current` symlink, restarts `smart-study-backend.service`, checks `/health`, and rolls back the symlink on failure. Production `.env` and uploads live under `/opt/smart-study-backend/shared/`.
+FastAPI is deployed at `https://chatbot.kadaima.com/smart-study`. Nginx terminates TLS and proxies REST plus `/smart-study/socket.io` to `127.0.0.1:4000`. Immutable releases live under `/opt/smart-study-backend/releases`, with `current`, shared `.env`/uploads, checksum migrations, readiness checks, rollback, a restricted `deploy` account, and separate systemd web/scheduler services. The installed GitHub Actions workflow validates Python 3.12, formatting, lint, compilation, production entry-point imports, and tests before SSH upload/activation on every successful `main` push. Never edit `current` directly or bypass a failed workflow with an ad hoc production patch.
 
 The Flutter Android release is built from `my_app` with `flutter build apk --release` for direct installation or `flutter build appbundle --release` for Google Play. Rebuild after URL or manifest changes, inspect the generated APK rather than trusting an old artifact, and install it over the device copy. The current Gradle release block still uses the debug signing configuration, so replace it with a protected upload keystore before external production distribution.

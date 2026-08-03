@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../providers/auth_provider.dart';
 
@@ -37,9 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (state.isAuthenticated) {
       context.go('/home/dashboard');
     } else if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.error!), backgroundColor: AppColors.error),
-      );
+      AppMessage.error(context, state.error!);
     }
   }
 

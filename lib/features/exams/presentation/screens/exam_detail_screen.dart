@@ -7,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/helpers.dart';
 import '../../../../shared/models/exam_model.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../providers/exam_provider.dart';
 
@@ -63,12 +64,25 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> {
     if (!success) _showError();
   }
 
+  Future<void> _publish() async {
+    final success = await ref
+        .read(examProvider.notifier)
+        .publishCollaborativeExam(widget.examId);
+    if (!mounted) return;
+    if (!success) {
+      _showError();
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Exam published. Good luck everyone!'),
+      backgroundColor: AppColors.success,
+    ));
+  }
+
   void _showError() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ref.read(examProvider).error ?? 'Something went wrong.'),
-        backgroundColor: AppColors.error,
-      ),
+    AppMessage.error(
+      context,
+      ref.read(examProvider).error ?? 'Something went wrong.',
     );
   }
 
@@ -108,6 +122,55 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> {
                   onDecline: () => _respond(false),
                 ),
               ],
+              if (exam.isCollaborative && exam.status == ExamStatus.draft) ...[
+                const SizedBox(height: 18),
+                _CollaborativeLobby(
+                  exam: exam,
+                  owned: owned,
+                  loading: state.isActionLoading,
+                  onContribute: () =>
+                      context.push('/exams/${exam.id}/contribute'),
+                  onPublish: _publish,
+                ),
+              ],
+              if (owned &&
+                  exam.type == ExamType.individual &&
+                  exam.status == ExamStatus.draft) ...[
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [
+                      AppColors.primary.withValues(alpha: .12),
+                      AppColors.accent.withValues(alpha: .07),
+                    ]),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: .22)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Build your question set',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 6),
+                      Text('${exam.questionCount} questions selected'),
+                      const SizedBox(height: 14),
+                      FilledButton.icon(
+                        onPressed: () =>
+                            context.push('/exams/${exam.id}/questions'),
+                        icon: const Icon(Icons.library_add_check_rounded),
+                        label: const Text('Choose & review questions'),
+                        style: FilledButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 22),
               Text('Exam setup',
                   style: Theme.of(context).textTheme.titleMedium),
@@ -128,7 +191,11 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 10),
-              _Participants(participants: exam.participants),
+              _Participants(
+                participants: exam.participants,
+                contributionQuota: exam.questionsPerParticipant,
+                lobbyOpen: exam.status == ExamStatus.draft,
+              ),
               const SizedBox(height: 24),
               _PrimaryAction(exam: exam),
               if (owned &&
@@ -207,7 +274,11 @@ class _ExamHero extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${exam.subjectName} · ${exam.topicName}',
+            exam.subjectName.isEmpty
+                ? 'General collaborative exam'
+                : exam.topicName.isEmpty
+                    ? exam.subjectName
+                    : '${exam.subjectName} · ${exam.topicName}',
             style: TextStyle(color: Colors.white.withValues(alpha: .82)),
           ),
           if (exam.startTime != null) ...[
@@ -370,9 +441,8 @@ class _OrganizerSnapshot extends StatelessWidget {
         .map((participant) => participant.score)
         .whereType<double>()
         .toList();
-    final average = scores.isEmpty
-        ? null
-        : scores.reduce((a, b) => a + b) / scores.length;
+    final average =
+        scores.isEmpty ? null : scores.reduce((a, b) => a + b) / scores.length;
     final passed = scores.isEmpty
         ? null
         : scores.where((score) => score >= exam.passPercent).length /
@@ -458,10 +528,133 @@ class _OrganizerSnapshot extends StatelessWidget {
   }
 }
 
+class _CollaborativeLobby extends StatelessWidget {
+  final ExamModel exam;
+  final bool owned;
+  final bool loading;
+  final VoidCallback onContribute;
+  final VoidCallback onPublish;
+
+  const _CollaborativeLobby({
+    required this.exam,
+    required this.owned,
+    required this.loading,
+    required this.onContribute,
+    required this.onPublish,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final quota = exam.questionsPerParticipant ?? 0;
+    final mineReady = exam.myContributionCount == quota;
+    final publishReady = exam.contributionsReady &&
+        exam.pendingInvitationCount == 0 &&
+        exam.participants.length >= 2;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [
+          AppColors.primary.withValues(alpha: .12),
+          AppColors.accent.withValues(alpha: .07),
+        ]),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.primary.withValues(alpha: .22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child:
+                  const Icon(Icons.groups_2_rounded, color: AppColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Private question lobby',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800)),
+                  Text('$quota unique questions from every participant',
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 12)),
+                ],
+              ),
+            ),
+          ]),
+          if ((exam.contributionInstructions ?? '').isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(exam.contributionInstructions!),
+          ],
+          const SizedBox(height: 14),
+          LinearProgressIndicator(
+            value: quota == 0 ? 0 : exam.myContributionCount / quota,
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(99),
+            color: mineReady ? AppColors.success : AppColors.primary,
+          ),
+          const SizedBox(height: 7),
+          Text(
+            mineReady
+                ? 'Your questions are ready and hidden'
+                : 'Your progress: ${exam.myContributionCount}/$quota',
+            style: TextStyle(
+              color: mineReady ? AppColors.success : AppColors.textMuted,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 15),
+          if (!exam.isInvitationPending)
+            FilledButton.icon(
+              onPressed: loading ? null : onContribute,
+              icon: Icon(mineReady ? Icons.edit_rounded : Icons.add_rounded),
+              label:
+                  Text(mineReady ? 'Review my questions' : 'Add my questions'),
+              style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50)),
+            ),
+          if (owned) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: loading || !publishReady ? null : onPublish,
+              icon: const Icon(Icons.rocket_launch_rounded),
+              label: Text(publishReady
+                  ? 'Publish exam'
+                  : 'Waiting for everyone to be ready'),
+              style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50)),
+            ),
+          ],
+          const SizedBox(height: 9),
+          const Text(
+            'Question text and answers remain private until the exam opens.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Participants extends StatelessWidget {
   final List<ExamParticipant> participants;
+  final int? contributionQuota;
+  final bool lobbyOpen;
 
-  const _Participants({required this.participants});
+  const _Participants({
+    required this.participants,
+    this.contributionQuota,
+    this.lobbyOpen = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -483,12 +676,20 @@ class _Participants extends StatelessWidget {
                 leading: AvatarWidget(name: participant.name, radius: 18),
                 title: Text(participant.name),
                 trailing: Text(
-                  participant.hasCompleted ? 'Submitted' : 'Not submitted',
+                  contributionQuota != null && lobbyOpen
+                      ? '${participant.contributionCount}/$contributionQuota ready'
+                      : participant.hasCompleted
+                          ? 'Submitted'
+                          : 'Not submitted',
                   style: TextStyle(
                     fontSize: 12,
-                    color: participant.hasCompleted
-                        ? AppColors.success
-                        : AppColors.textMuted,
+                    color: contributionQuota != null && lobbyOpen
+                        ? participant.contributionCount == contributionQuota
+                            ? AppColors.success
+                            : AppColors.warning
+                        : participant.hasCompleted
+                            ? AppColors.success
+                            : AppColors.textMuted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -510,6 +711,9 @@ class _PrimaryAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (exam.status == ExamStatus.draft) {
+      return const SizedBox.shrink();
+    }
     if (exam.isInvitationPending ||
         exam.invitationStatus == ExamInvitationStatus.declined ||
         exam.status == ExamStatus.cancelled) {

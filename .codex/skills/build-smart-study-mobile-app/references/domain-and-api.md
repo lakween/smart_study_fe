@@ -18,7 +18,7 @@
 
 The current app constants default release builds to the deployed HTTPS backend when no override is supplied. URL changes are compile-time changes, so rebuild and reinstall the APK. Always inspect `AppConstants.baseUrl` rather than assuming localhost behavior.
 
-Use the backend `{ "error": "..." }` message through `apiErrorMessage`; generic 500 responses never expose Prisma/SQL internals and include a request ID. Access and rotating refresh tokens live in secure storage. Dio shares one refresh operation, retries a failed authenticated request once, and signs out only when refresh/retry fails. Socket authentication follows the same refresh-first behavior.
+Use the backend `{ "error": "..." }` message through `apiErrorMessage`; generic 500 responses never expose database internals and include a request ID. Access and rotating refresh tokens live in secure storage. Dio shares one refresh operation, retries a failed authenticated request once, and signs out only when refresh/retry fails. Socket authentication follows the same refresh-first behavior.
 
 Auth endpoints include register, login, current user, forgot password, profile update, avatar upload, password/email change, and account deletion. Successful login/register stores `token`; sign-out clears it.
 
@@ -56,7 +56,7 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 
 ## Real-time contract
 
-- Backend `src/server.ts` creates an HTTP server shared by Express and Socket.IO.
+- The target FastAPI ASGI application must host `python-socketio` on the same origin and preserve the existing Socket.IO protocol. The legacy `src/server.ts` remains parity evidence until this is implemented.
 - The client sends `{ token: <JWT> }` in handshake auth.
 - REST and Socket middleware verify both the JWT and that its user still exists before allowing protected work; valid sockets join `user:<userId>`.
 - Backend notification creation goes through `createNotification`, which persists first and emits `notification:new` to the recipient room.
@@ -89,6 +89,12 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 
 ## Exam lifecycle and security
 
+- New friend exams use a private collaborative lobby. The organizer and every accepted participant contribute the configured equal question quota; contributors can read/edit only their own draft questions, while lobby summaries expose counts but never another participant's question text or answers.
+- Collaborative invitations are created while the exam is `DRAFT`. Publishing is organizer-only and is blocked until all invitations are resolved, at least two participants remain, and every participant has submitted exactly the quota. The organizer is also a normal participant and must contribute.
+- Contribution duplicates are rejected from Unicode-normalized question text under a per-exam database lock. The error never reveals the existing question. Instructions should divide subject areas to reduce semantic duplicates without requiring an AI call.
+- Publishing snapshots every accepted contribution into the common exam question set. Everyone receives the same questions, with stable per-attempt order shuffling; friend-exam solutions still wait until shared completion.
+- Collaborative exams may be unclassified: `subjectId` and `topicId` are optional. A selected topic requires its owned subject; selected classifications surface accessible related exams inside subject/topic detail tabs. Individual exams still require a topic because their questions come from that quiz bank.
+- Participant IDs and questions-per-participant use positive, user-entered counts without product-level list caps; transport/body and infrastructure protections remain authoritative. Do not reintroduce preset-only question chips.
 - `POST /exams/:id/attempts` creates or resumes the unique exam+user attempt and returns `serverNow`; calculate countdowns from `deadlineAt` with that clock offset.
 - Autosave with `PUT /exams/:id/attempts/:attemptId/answers`; submit with `POST /exams/:id/attempts/:attemptId/submit`; both validate question ownership and the authenticated attempt owner.
 - Attempt payloads never include `correctAnswer` or `explanation`. Individual solutions release after submission; friend-exam score, leaderboard, and solutions release only after the shared close time.

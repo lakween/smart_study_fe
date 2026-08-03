@@ -1,17 +1,17 @@
 ---
 name: build-smart-study-mobile-app
-description: Build, extend, debug, review, deploy, or test the Smart Study Flutter application and its paired Express/Prisma backend. Use for Dart, Flutter, TypeScript, REST, Socket.IO, Riverpod, GoRouter, Dio, authentication, subjects, topics, documents, quizzes, spaced repetition, AI quiz generation, exams, friends, profiles, real-time notifications, dashboards, settings, theming, GitHub Actions deployment, or Android/iOS/web/desktop behavior in Smart Study.
+description: Build, extend, debug, review, migrate, deploy, or test the Smart Study Flutter application and its FastAPI/PostgreSQL backend. Use for Dart, Flutter, Python, FastAPI, SQLAlchemy, Pydantic, REST, Socket.IO, Riverpod, GoRouter, Dio, authentication, subjects, topics, documents, quizzes, spaced repetition, AI quiz generation, exams, friends, profiles, real-time notifications, dashboards, settings, theming, deployment, or Android/iOS/web/desktop behavior in Smart Study.
 ---
 
 # Build Smart Study Mobile App
 
 ## Start with repository evidence
 
-1. Work from the Flutter project root containing `pubspec.yaml` and `lib/main.dart`. The paired backend is the separate Git repository at `../backend`.
+1. Work from the Flutter project root containing `pubspec.yaml` and `lib/main.dart`. The production backend source is the sibling `../smart_study_backend/`. The legacy Express repository at `../backend` is historical read-only migration evidence; its production PM2 process has been permanently removed.
 2. Inspect the files related to the requested feature before changing code. Do not assume generic Flutter conventions override repository patterns.
 3. Read [architecture.md](references/architecture.md) for module placement, state flow, navigation, and UI conventions.
 4. Read [domain-and-api.md](references/domain-and-api.md) when changing models, providers, authentication, networking, uploads, or backend contracts.
-5. Check `git status --short` in the frontend and, for backend work, `git -C ../backend status --short`. Preserve unrelated user changes in both repositories.
+5. Read [fastapi-migration.md](../../../docs/wiki/fastapi-migration.md) before backend work. Check `git status --short` and preserve unrelated user changes. Do not modify `../backend` unless the user explicitly requests legacy maintenance.
 
 ## Implement changes
 
@@ -26,6 +26,8 @@ description: Build, extend, debug, review, deploy, or test the Smart Study Flutt
 - Reuse shared widgets and theme tokens before adding one-off styles. Support both light and dark themes and use Material 3 semantics.
 - Preserve mounted checks after asynchronous work before navigation or UI access.
 - Keep exam ownership based on the backend `mine` result and locally created exam IDs, not only `organizerId`, so new exams appear immediately.
+- Keep collaborative friend exams blind and equal: the organizer participates and contributes the same quota, contributors can retrieve only their own draft questions, lobby views expose counts but never content, and publish requires every invitation resolved and every remaining participant ready. Reject normalized duplicates without revealing the existing question.
+- Keep collaborative exam subject/topic classification optional. If selected, expose accessible related exams in those detail views. Use a positive numeric questions-per-participant field rather than capped presets; do not impose product-level participant or contribution-list caps.
 - Treat spaced-repetition scheduling as backend-owned. Quiz submission updates `[1, 3, 7, 14, 30]` day intervals at a 60% pass threshold; Flutter displays `nextRevisionDate` but does not calculate it.
 - Keep performance analytics server-authoritative and typed through `PerformanceReport`. Compare equal rolling periods, build activity from actual quiz attempts and submitted exam attempts, filter exam history by `submittedAt`, expose stored memory intervals/stages, and never invent a retention percentage. Preserve `/dashboard?section=memory` as the Home Memory Plan deep link.
 - Keep destructive actions behind confirmation and keep private/friends/public visibility and `allowCopy` rules intact.
@@ -40,6 +42,10 @@ description: Build, extend, debug, review, deploy, or test the Smart Study Flutt
 - Serve document uploads only through authenticated document authorization. Verify magic bytes, parent ownership/visibility, and delete the physical file only after its final reference is gone. Do not expose the raw uploads directory; give avatars a separate explicit delivery policy.
 - Quiz time limits are optional whole minutes from 1 to 180. Before an attempt, offer timed practice when a limit exists and always offer untimed practice; start timing only after mode selection.
 - Normalize user-authored subject, topic, quiz, question, option, and explanation text before PostgreSQL writes; remove NUL characters and validate the normalized value.
+- Build backend behavior in `../smart_study_backend/app/` with thin routers, Pydantic schemas, domain services, and focused SQLAlchemy repositories. Prefer explicit domain code over generic base repositories.
+- Preserve the existing PostgreSQL schema and enum values during migration. Prisma migrations remain historical schema evidence; FastAPI uses async SQLAlchemy with Psycopg 3 and must not create a parallel database.
+- Preserve every Flutter-facing path, method, status code, response envelope, JSON key, enum spelling, timestamp, pagination shape, upload field, and Socket.IO event. Do not mark a module migrated until parity tests cover its critical behavior.
+- Keep raw document files private behind authenticated delivery. Keep avatars under a separate, explicit public profile-media policy.
 - Do not add a new state-management, routing, HTTP, persistence, serialization, or design-system library unless the request requires it.
 
 ## Add a feature consistently
@@ -70,17 +76,19 @@ flutter analyze
 flutter test
 ```
 
-For backend changes, also run from `../backend`:
+For FastAPI backend changes, run from `../smart_study_backend/`:
 
 ```text
-npm run build
-npm audit --omit=dev
+.venv/Scripts/python.exe -m ruff format --check app tests
+.venv/Scripts/python.exe -m ruff check app tests
+.venv/Scripts/python.exe -m compileall -q app tests
+.venv/Scripts/python.exe -m pytest -q
 ```
 
-Use `npm run seed:test-users` when development needs the repeatable 100-user dataset. It replaces only `seed.user###@smartstudy.test` accounts and creates subjects, topics, quizzes, and questions for pagination/content testing.
+Use `scripts/seed_test_users.py` for generated development data. Require the explicit test-database guard in automation; never run seed or migration experiments against production.
 
 Run `dart format lib test` when formatting changes are authorized. For platform-specific work, also run the relevant build or launch command. Use `--dart-define=API_BASE_URL=<url>` for non-default backend locations; Android emulator localhost maps to `10.0.2.2`.
 
 For Android release work, keep `android.permission.INTERNET` in `android/app/src/main/AndroidManifest.xml`; debug/profile manifests do not contribute it to a release APK. Release mode defaults to `AppEnvironment.productionUrl`, while a non-empty `API_BASE_URL` remains the highest-priority compile-time override. Rebuild and reinstall after changing either value because an installed APK retains its compiled URL. Verify the generated APK manifest with `aapt dump permissions` and require a successful build plus a newly updated artifact before reporting completion.
 
-Before finishing, inspect both repository diffs when applicable, confirm imports/routes/socket lifecycle, verify async mounted safety, and report checks that could not run. For production socket changes, confirm the `/smart-study/socket.io` reverse-proxy upgrade configuration documented in `../backend/DEPLOYMENT.md`.
+Before finishing, inspect the diff, confirm imports/routes/session transactions/socket lifecycle, verify async mounted safety, and report checks that could not run. For historical contract questions, compare with `../backend/src/` without modifying it. Production is served at `https://chatbot.kadaima.com/smart-study`; preserve the `/smart-study/socket.io` reverse-proxy path. Successful pushes to backend `main` automatically validate on Python 3.12 and deploy through `.github/workflows/deploy.yml`. Monitor both jobs and verify the public `/health/ready` response; never edit `/opt/smart-study-backend/current` directly. Runtime services are `smart-study-fastapi.service` and `smart-study-scheduler.service`.

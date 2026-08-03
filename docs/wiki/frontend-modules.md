@@ -73,8 +73,10 @@ PDF input is text-extracted; image bytes go directly to the server-selected Open
 Provider: `examProvider`. Models: `ExamModel`, `ExamParticipant`, `ExamAttemptModel`, and `ExamResultModel`.
 
 - `ExamListScreen`: collapsible exam dashboard with live/upcoming/action/completed totals, next-exam countdown, organizer performance, search, status filters, sorting, paginated My Exams/Invited tabs, and per-exam invitation/submission progress.
-- `CreateExamScreen`: subject/topic, individual/friend mode, duration, question count, pass mark, shuffle behavior, start time, and invited friends.
-- `ExamDetailScreen`: secure preflight, schedule/settings, invitation response, participants, organizer cancellation, and start/resume/results actions.
+- `CreateExamScreen`: optional subject/topic classification for collaborative exams, individual/friend mode, free numeric questions-per-participant, duration, pass mark, shuffle behavior, start time, instructions, and an uncapped friend selection list. Individual exams still require a topic question bank.
+- `ExamDetailScreen`: secure preflight, private collaborative-lobby readiness, invitation response, per-participant contribution counts, blind organizer publishing, cancellation, and start/resume/results actions.
+- `ExamContributionScreen`: private dynamic question forms with four options, correct answer, optional explanation, Unicode-safe duplicate protection, and no access to another participant's content.
+- Subject and topic detail screens include an Exams tab for authenticated-user-accessible exams that selected that classification.
 - `ExamAttemptScreen`: server-clock countdown, stable question order, answer resume/autosave, guarded exit, and idempotent submission.
 - `ExamResultScreen`: pass/fail summary, conditionally released leaderboard, and solution review.
 

@@ -24,6 +24,8 @@ import '../../features/exams/presentation/screens/create_exam_screen.dart';
 import '../../features/exams/presentation/screens/exam_detail_screen.dart';
 import '../../features/exams/presentation/screens/exam_attempt_screen.dart';
 import '../../features/exams/presentation/screens/exam_result_screen.dart';
+import '../../features/exams/presentation/screens/exam_contribution_screen.dart';
+import '../../features/exams/presentation/screens/individual_exam_questions_screen.dart';
 import '../../features/friends/presentation/screens/friends_list_screen.dart';
 import '../../features/friends/presentation/screens/friend_requests_screen.dart';
 import '../../features/friends/presentation/screens/find_friends_screen.dart';
@@ -146,6 +148,16 @@ final appRouter = GoRouter(
     // Exams
     GoRoute(
         path: '/exams/create', builder: (_, __) => const CreateExamScreen()),
+    GoRoute(
+      path: '/exams/:examId/contribute',
+      builder: (_, state) =>
+          ExamContributionScreen(examId: state.pathParameters['examId']!),
+    ),
+    GoRoute(
+      path: '/exams/:examId/questions',
+      builder: (_, state) =>
+          IndividualExamQuestionsScreen(examId: state.pathParameters['examId']!),
+    ),
     GoRoute(
       path: '/exams/:examId',
       builder: (_, state) =>

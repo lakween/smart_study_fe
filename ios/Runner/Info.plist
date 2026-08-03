@@ -53,6 +53,10 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a profile picture or cover photo for your Smart Study profile.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a profile picture or cover photo for your Smart Study profile.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

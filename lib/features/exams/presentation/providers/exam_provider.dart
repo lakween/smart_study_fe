@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_client.dart';
@@ -194,10 +195,10 @@ class ExamNotifier extends StateNotifier<ExamState> {
     }
   }
 
-  Future<bool> createExam({
+  Future<ExamModel?> createExam({
     required String title,
-    required String subjectId,
-    required String topicId,
+    String? subjectId,
+    String? topicId,
     required ExamType type,
     required int durationMinutes,
     required int questionCount,
@@ -205,10 +206,12 @@ class ExamNotifier extends StateNotifier<ExamState> {
     bool shuffleQuestions = true,
     DateTime? startTime,
     List<String> participantIds = const [],
+    int? questionsPerParticipant,
+    String? contributionInstructions,
   }) async {
     state = state.copyWith(isActionLoading: true, error: null);
     try {
-      final response = await _dio.post('/exams', data: {
+      final data = <String, dynamic>{
         'title': title,
         'subjectId': subjectId,
         'topicId': topicId,
@@ -219,8 +222,17 @@ class ExamNotifier extends StateNotifier<ExamState> {
         'shuffleQuestions': shuffleQuestions,
         'startTime': startTime?.toUtc().toIso8601String(),
         'participantIds': participantIds,
-        'publish': true,
-      });
+        'publish': type == ExamType.friendExam,
+        'questionsPerParticipant': questionsPerParticipant,
+        'contributionInstructions': contributionInstructions,
+      };
+      if (kDebugMode) {
+        debugPrint(
+          'Exam create classification: type=${type.name}, '
+          'subjectId=$subjectId, topicId=$topicId',
+        );
+      }
+      final response = await _dio.post('/exams', data: data);
       final exam =
           ExamModel.fromJson(response.data['exam'] as Map<String, dynamic>);
       state = state.copyWith(
@@ -229,6 +241,84 @@ class ExamNotifier extends StateNotifier<ExamState> {
         ownedExamIds: {...state.ownedExamIds, exam.id},
         error: null,
       );
+      return exam;
+    } catch (error) {
+      state = state.copyWith(
+        isActionLoading: false,
+        error: apiErrorMessage(error),
+      );
+      return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>?> loadQuestionBank(String examId) async {
+    try {
+      final response = await _dio.get('/exams/$examId/question-bank');
+      return (response.data['questions'] as List<dynamic>? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+    } catch (error) {
+      state = state.copyWith(error: apiErrorMessage(error));
+      return null;
+    }
+  }
+
+  Future<bool> saveQuestionSelection(String examId, List<String> ids) async {
+    state = state.copyWith(isActionLoading: true, error: null);
+    try {
+      await _dio.put('/exams/$examId/question-bank', data: {'questionIds': ids});
+      await ensureExam(examId, refresh: true);
+      state = state.copyWith(isActionLoading: false, error: null);
+      return true;
+    } catch (error) {
+      state = state.copyWith(isActionLoading: false, error: apiErrorMessage(error));
+      return false;
+    }
+  }
+
+  Future<List<QuestionModel>?> loadContributions(String examId) async {
+    try {
+      final response = await _dio.get('/exams/$examId/contributions');
+      return (response.data['questions'] as List<dynamic>? ?? const [])
+          .map((item) => QuestionModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (error) {
+      state = state.copyWith(error: apiErrorMessage(error));
+      return null;
+    }
+  }
+
+  Future<bool> submitContributions(
+    String examId,
+    List<QuestionModel> questions,
+  ) async {
+    state = state.copyWith(isActionLoading: true, error: null);
+    try {
+      await _dio.put('/exams/$examId/contributions', data: {
+        'questions': questions.map((question) => question.toJson()).toList(),
+      });
+      await ensureExam(examId, refresh: true);
+      state = state.copyWith(isActionLoading: false, error: null);
+      return true;
+    } catch (error) {
+      state = state.copyWith(
+        isActionLoading: false,
+        error: apiErrorMessage(error),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> publishCollaborativeExam(String examId) async {
+    state = state.copyWith(isActionLoading: true, error: null);
+    try {
+      final response = await _dio.post(
+        '/exams/$examId/publish',
+        data: const {'participantIds': <String>[]},
+      );
+      _upsert(
+          ExamModel.fromJson(response.data['exam'] as Map<String, dynamic>));
+      state = state.copyWith(isActionLoading: false, error: null);
       return true;
     } catch (error) {
       state = state.copyWith(
@@ -420,3 +510,19 @@ final examAttemptProvider = Provider.family<ExamAttemptModel?, String>(
 final examResultProvider = Provider.family<ExamResultModel?, String>(
   (ref, examId) => ref.watch(examProvider).results[examId],
 );
+
+typedef RelatedExamQuery = ({String? subjectId, String? topicId});
+
+final relatedExamsProvider =
+    FutureProvider.family<List<ExamModel>, RelatedExamQuery>(
+        (ref, query) async {
+  final response =
+      await ApiClient().dio.get('/exams/related', queryParameters: {
+    if (query.subjectId != null) 'subjectId': query.subjectId,
+    if (query.topicId != null) 'topicId': query.topicId,
+    'limit': 100,
+  });
+  return (response.data['exams'] as List<dynamic>? ?? const [])
+      .map((item) => ExamModel.fromJson(item as Map<String, dynamic>))
+      .toList();
+});

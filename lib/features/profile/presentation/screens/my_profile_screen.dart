@@ -7,6 +7,7 @@ import '../../../../shared/models/document_model.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/quiz_card.dart';
+import '../../../../shared/widgets/profile_cover.dart';
 import '../../../../shared/widgets/subject_card.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../documents/presentation/providers/document_provider.dart';
@@ -20,10 +21,24 @@ class MyProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
-    if (user == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    final mySubjects = ref.watch(subjectProvider).subjects.where((s) => s.ownerId == user.id).toList();
-    final myQuizzes = ref.watch(quizProvider).quizzes.where((q) => q.ownerId == user.id).toList();
-    final myDocuments = ref.watch(documentProvider).documents.where((d) => d.ownerId == user.id).toList();
+    if (user == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final mySubjects = ref
+        .watch(subjectProvider)
+        .subjects
+        .where((s) => s.ownerId == user.id)
+        .toList();
+    final myQuizzes = ref
+        .watch(quizProvider)
+        .quizzes
+        .where((q) => q.ownerId == user.id)
+        .toList();
+    final myDocuments = ref
+        .watch(documentProvider)
+        .documents
+        .where((d) => d.ownerId == user.id)
+        .toList();
     final theme = Theme.of(context);
 
     return DefaultTabController(
@@ -32,7 +47,9 @@ class MyProfileScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('My Profile'),
           actions: [
-            IconButton(icon: const Icon(Icons.settings_outlined), onPressed: () => context.push('/settings')),
+            IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () => context.push('/settings')),
           ],
         ),
         body: NestedScrollView(
@@ -40,60 +57,82 @@ class MyProfileScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Column(
                 children: [
-                  Container(
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.8), AppColors.primaryLight], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                    ),
-                  ),
+                  ProfileCover(imageUrl: user.coverImageUrl, height: 140),
                   Transform.translate(
-                    offset: const Offset(0, -40),
+                    offset: const Offset(0, -46),
                     child: Column(
                       children: [
                         Stack(
                           children: [
-                            AvatarWidget(name: user.fullName, imageUrl: user.profileImageUrl, radius: 40),
+                            AvatarWidget(
+                                name: user.fullName,
+                                imageUrl: user.profileImageUrl,
+                                radius: 40),
                             Positioned(
-                              bottom: 0, right: 0,
+                              bottom: 0,
+                              right: 0,
                               child: GestureDetector(
                                 onTap: () => context.push('/profile/edit'),
                                 child: Container(
-                                  width: 28, height: 28,
-                                  decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                                  child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                                  width: 28,
+                                  height: 28,
+                                  decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle),
+                                  child: const Icon(Icons.camera_alt,
+                                      size: 14, color: Colors.white),
                                 ),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Text(user.fullName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(user.fullName,
+                            style: theme.textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold)),
                         if (user.bio != null)
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 4),
-                            child: Text(user.bio!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 4),
+                            child: Text(user.bio!,
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 13),
+                                textAlign: TextAlign.center),
                           ),
                         if (user.university != null)
-                          Text(user.university!, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                          Text(user.university!,
+                              style: const TextStyle(
+                                  color: AppColors.textMuted, fontSize: 12)),
                         const SizedBox(height: 16),
                         Padding(
-                      padding: AppSpacing.pageHorizontal,
+                          padding: AppSpacing.pageHorizontal,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _StatItem(label: 'Subjects', value: '${mySubjects.length}'),
-                              _StatItem(label: 'Quizzes', value: '${user.quizzesAttempted}'),
-                              _StatItem(label: 'Avg Score', value: '${user.avgScore.toStringAsFixed(0)}%'),
-                              _StatItem(label: 'Friends', value: '${user.friendCount}'),
+                              _StatItem(
+                                  label: 'Subjects',
+                                  value: '${mySubjects.length}'),
+                              _StatItem(
+                                  label: 'Quizzes',
+                                  value: '${user.quizzesAttempted}'),
+                              _StatItem(
+                                  label: 'Avg Score',
+                                  value:
+                                      '${user.avgScore.toStringAsFixed(0)}%'),
+                              _StatItem(
+                                  label: 'Friends',
+                                  value: '${user.friendCount}'),
                             ],
                           ),
                         ),
                         const SizedBox(height: 16),
                         Padding(
-                      padding: AppSpacing.pageHorizontal,
+                          padding: AppSpacing.pageHorizontal,
                           child: ElevatedButton(
                             onPressed: () => context.push('/profile/edit'),
-                            style: ElevatedButton.styleFrom(minimumSize: const Size(200, 40)),
+                            style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(200, 40)),
                             child: const Text('Edit Profile'),
                           ),
                         ),
@@ -101,7 +140,11 @@ class MyProfileScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const TabBar(tabs: [Tab(text: 'Subjects'), Tab(text: 'Quizzes'), Tab(text: 'Documents')]),
+                  const TabBar(tabs: [
+                    Tab(text: 'Subjects'),
+                    Tab(text: 'Quizzes'),
+                    Tab(text: 'Documents')
+                  ]),
                 ],
               ),
             ),
@@ -109,31 +152,57 @@ class MyProfileScreen extends ConsumerWidget {
           body: TabBarView(
             children: [
               mySubjects.isEmpty
-                  ? EmptyState(icon: Icons.book_outlined, title: 'No subjects', message: 'Create your first subject', actionLabel: 'Create', onAction: () => context.push('/subjects/create'))
+                  ? EmptyState(
+                      icon: Icons.book_outlined,
+                      title: 'No subjects',
+                      message: 'Create your first subject',
+                      actionLabel: 'Create',
+                      onAction: () => context.push('/subjects/create'))
                   : GridView.builder(
                       padding: AppSpacing.list,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.82),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.82),
                       itemCount: mySubjects.length,
-                      itemBuilder: (_, i) => SubjectCard(subject: mySubjects[i], onTap: () => context.push('/subjects/${mySubjects[i].id}')),
+                      itemBuilder: (_, i) => SubjectCard(
+                          subject: mySubjects[i],
+                          onTap: () =>
+                              context.push('/subjects/${mySubjects[i].id}')),
                     ),
               myQuizzes.isEmpty
-                  ? const EmptyState(icon: Icons.quiz_outlined, title: 'No quizzes', message: 'Create your first quiz')
+                  ? const EmptyState(
+                      icon: Icons.quiz_outlined,
+                      title: 'No quizzes',
+                      message: 'Create your first quiz')
                   : ListView.separated(
                       padding: AppSpacing.list,
                       itemCount: myQuizzes.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, i) => QuizCard(quiz: myQuizzes[i], onPractice: () => context.push('/quizzes/${myQuizzes[i].id}/attempt')),
+                      itemBuilder: (_, i) => QuizCard(
+                          quiz: myQuizzes[i],
+                          onPractice: () => context
+                              .push('/quizzes/${myQuizzes[i].id}/attempt')),
                     ),
               myDocuments.isEmpty
-                  ? EmptyState(icon: Icons.folder_outlined, title: 'No documents', message: 'Upload your first document', actionLabel: 'Upload', onAction: () => context.push('/documents/upload'))
+                  ? EmptyState(
+                      icon: Icons.folder_outlined,
+                      title: 'No documents',
+                      message: 'Upload your first document',
+                      actionLabel: 'Upload',
+                      onAction: () => context.push('/documents/upload'))
                   : ListView.builder(
                       padding: AppSpacing.list,
                       itemCount: myDocuments.length,
                       itemBuilder: (_, i) => ListTile(
-                        leading: const Icon(Icons.attach_file, color: AppColors.primary),
+                        leading: const Icon(Icons.attach_file,
+                            color: AppColors.primary),
                         title: Text(myDocuments[i].title),
                         subtitle: Text(myDocuments[i].fileType.label),
-                        onTap: () => context.push('/documents/${myDocuments[i].id}/view'),
+                        onTap: () => context
+                            .push('/documents/${myDocuments[i].id}/view'),
                       ),
                     ),
             ],
@@ -150,7 +219,9 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(children: [
-    Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-  ]);
+        Text(value,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+      ]);
 }
