@@ -7,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/question_model.dart';
 import '../../../../shared/widgets/app_message.dart';
 import '../providers/exam_provider.dart';
+import '../widgets/exam_question_library_picker.dart';
 
 class ExamContributionScreen extends ConsumerStatefulWidget {
   final String examId;
@@ -116,6 +117,133 @@ class _ExamContributionScreenState
     }
   }
 
+  Future<void> _importFromLibrary() async {
+    final rows = await ref
+        .read(examProvider.notifier)
+        .loadContributionLibrary(widget.examId);
+    if (!mounted || rows == null) return;
+    if (rows.isEmpty) {
+      AppMessage.error(context, 'Create a quiz first to import questions');
+      return;
+    }
+    final chosen = <String>{};
+    final imported = await showModalBottomSheet<List<Map<String, dynamic>>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SizedBox(
+          height: MediaQuery.sizeOf(context).height * .92,
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Choose from your quizzes',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Selected and available quizzes stay separate',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ExamQuestionLibraryPicker(
+                  questions: rows,
+                  selectedIds: chosen,
+                  maxSelection: _drafts.length,
+                  onSelectionChanged: (selection) => setSheetState(() {
+                    chosen
+                      ..clear()
+                      ..addAll(selection);
+                  }),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                ),
+                child: FilledButton.icon(
+                  onPressed: chosen.isEmpty
+                      ? null
+                      : () => Navigator.pop(
+                            sheetContext,
+                            rows
+                                .where((row) =>
+                                    chosen.contains(row['id'] as String))
+                                .toList(),
+                          ),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 54),
+                  ),
+                  icon: const Icon(Icons.library_add_check_rounded),
+                  label: Text(
+                    chosen.isEmpty
+                        ? 'Choose questions to import'
+                        : 'Import ${chosen.length} of ${_drafts.length} questions',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (imported == null || !mounted) return;
+    setState(() {
+      for (var i = 0; i < imported.length; i++) {
+        final q = imported[i], draft = _drafts[i];
+        draft.text.text = q['text'] as String;
+        draft.options[0].text = q['optionA'] as String;
+        draft.options[1].text = q['optionB'] as String;
+        draft.options[2].text = q['optionC'] as String;
+        draft.options[3].text = q['optionD'] as String;
+        draft.correct =
+            AnswerOptionExt.fromString(q['correctAnswer'] as String);
+        draft.explanation.text = q['explanation'] as String? ?? '';
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final exam = ref.watch(examByIdProvider(widget.examId));
@@ -188,6 +316,14 @@ class _ExamContributionScreenState
                       ),
                     ],
                     const SizedBox(height: 20),
+                    OutlinedButton.icon(
+                      onPressed: saving ? null : _importFromLibrary,
+                      icon: const Icon(Icons.library_add_rounded),
+                      label: const Text('Import questions from my quizzes'),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 52)),
+                    ),
+                    const SizedBox(height: 16),
                     ..._drafts.asMap().entries.map((entry) => Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _QuestionCard(

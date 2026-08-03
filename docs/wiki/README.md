@@ -29,6 +29,8 @@ Backend notification service
 Uploads -> FastAPI multipart/signature validation -> private uploads -> authenticated document file route
 AI quiz -> multipart upload -> PDF/image extraction -> selected OpenAI/Gemini provider -> editable questions -> quiz creation
 Performance -> completion-dated backend aggregates -> typed PerformanceReport -> charts, rankings, memory actions
+Exam builder -> owned quiz-question catalog -> grouped selected/available picker -> locked published paper
+Subject copy -> visibility/copy authorization -> private nested copy with creator provenance
 ```
 
 The app is feature-first. A normal change should update the feature screen, provider, shared model, backend route/schema, serializer, and tests together.
@@ -73,3 +75,4 @@ The app is feature-first. A normal change should update the feature screen, prov
 5. Use `ApiClient().dio`; it injects the access token and serializes refresh-token rotation before one retry.
 6. Keep file limits aligned: PDF/JPG/JPEG/PNG, maximum 10 MB.
 7. Never expose `.env`, JWT secrets, database credentials, or AI keys.
+8. Keep user-visible failure details selectable through `AppMessage.error` or `ErrorState` so diagnostics can be copied directly.

@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/user_model.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
@@ -52,11 +53,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } catch (error) {
       if (mounted) {
         setState(() => _showFriendsOnlyPlaceholders = !value);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(apiErrorMessage(error)),
-              backgroundColor: AppColors.error),
-        );
+        AppMessage.error(context, apiErrorMessage(error));
       }
     } finally {
       if (mounted) setState(() => _savingPrivacy = false);
@@ -127,9 +124,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(apiErrorMessage(e)),
-            backgroundColor: AppColors.error));
+        AppMessage.error(context, apiErrorMessage(e));
       }
     }
   }
@@ -187,9 +182,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(apiErrorMessage(e)),
-            backgroundColor: AppColors.error));
+        AppMessage.error(context, apiErrorMessage(e));
       }
     }
   }
@@ -207,9 +200,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) context.go('/login');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(apiErrorMessage(e)),
-            backgroundColor: AppColors.error));
+        AppMessage.error(context, apiErrorMessage(e));
       }
     }
   }

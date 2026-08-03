@@ -7,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../subjects/presentation/providers/subject_provider.dart';
 import '../../../topics/presentation/providers/topic_provider.dart';
@@ -16,7 +17,8 @@ class DocumentUploadScreen extends ConsumerStatefulWidget {
   const DocumentUploadScreen({super.key});
 
   @override
-  ConsumerState<DocumentUploadScreen> createState() => _DocumentUploadScreenState();
+  ConsumerState<DocumentUploadScreen> createState() =>
+      _DocumentUploadScreenState();
 }
 
 class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
@@ -31,7 +33,10 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
   double _uploadProgress = 0;
 
   @override
-  void dispose() { _titleCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _titleCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -44,35 +49,45 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
   Future<void> _upload() async {
     if (!_formKey.currentState!.validate()) return;
     if (_pickedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a file'), backgroundColor: AppColors.error));
+      AppMessage.error(context, 'Please select a file');
       return;
     }
-    setState(() { _uploading = true; _uploadProgress = 0; });
+    setState(() {
+      _uploading = true;
+      _uploadProgress = 0;
+    });
     final ok = await ref.read(documentProvider.notifier).upload(
-      title: _titleCtrl.text.trim(),
-      subjectId: _subjectId!,
-      topicId: _topicId,
-      visibility: _visibility,
-      allowCopy: _allowCopy,
-      filePath: _pickedFile!.path!,
-      fileName: _pickedFile!.name,
-      onProgress: (p) { if (mounted) setState(() => _uploadProgress = p); },
-    );
+          title: _titleCtrl.text.trim(),
+          subjectId: _subjectId!,
+          topicId: _topicId,
+          visibility: _visibility,
+          allowCopy: _allowCopy,
+          filePath: _pickedFile!.path!,
+          fileName: _pickedFile!.name,
+          onProgress: (p) {
+            if (mounted) setState(() => _uploadProgress = p);
+          },
+        );
     if (!mounted) return;
     setState(() => _uploading = false);
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document uploaded successfully!'), backgroundColor: AppColors.success));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Document uploaded successfully!'),
+          backgroundColor: AppColors.success));
       context.pop();
     } else {
-      final error = ref.read(documentProvider).error ?? 'Could not upload document';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: AppColors.error));
+      final error =
+          ref.read(documentProvider).error ?? 'Could not upload document';
+      AppMessage.error(context, error);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final subjects = ref.watch(subjectProvider).subjects;
-    final topics = _subjectId != null ? ref.watch(topicsBySubjectProvider(_subjectId!)) : <dynamic>[];
+    final topics = _subjectId != null
+        ? ref.watch(topicsBySubjectProvider(_subjectId!))
+        : <dynamic>[];
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -85,25 +100,51 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppTextField(label: 'Document Title *', controller: _titleCtrl, prefixIcon: Icons.title, validator: (v) => Validators.required(v, 'Title')),
+                AppTextField(
+                    label: 'Document Title *',
+                    controller: _titleCtrl,
+                    prefixIcon: Icons.title,
+                    validator: (v) => Validators.required(v, 'Title')),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: _subjectId,
                   hint: const Text('Select Subject'),
-                  decoration: InputDecoration(labelText: 'Subject *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
-                  items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                  decoration: InputDecoration(
+                      labelText: 'Subject *',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none),
+                      filled: true),
+                  items: subjects
+                      .map((s) =>
+                          DropdownMenuItem(value: s.id, child: Text(s.name)))
+                      .toList(),
                   onChanged: (v) {
-                    setState(() { _subjectId = v; _topicId = null; });
-                    if (v != null) ref.read(topicProvider.notifier).loadForSubject(v);
+                    setState(() {
+                      _subjectId = v;
+                      _topicId = null;
+                    });
+                    if (v != null) {
+                      ref.read(topicProvider.notifier).loadForSubject(v);
+                    }
                   },
-                  validator: (v) => v == null ? 'Please select a subject' : null,
+                  validator: (v) =>
+                      v == null ? 'Please select a subject' : null,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: _topicId,
                   hint: const Text('Select Topic (optional)'),
-                  decoration: InputDecoration(labelText: 'Topic', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none), filled: true),
-                  items: topics.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name))).toList(),
+                  decoration: InputDecoration(
+                      labelText: 'Topic',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none),
+                      filled: true),
+                  items: topics
+                      .map((t) => DropdownMenuItem<String>(
+                          value: t.id, child: Text(t.name)))
+                      .toList(),
                   onChanged: (v) => setState(() => _topicId = v),
                 ),
                 const SizedBox(height: 20),
@@ -113,42 +154,71 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      border: Border.all(color: _pickedFile != null ? AppColors.primary : AppColors.divider, style: BorderStyle.solid, width: 1.5),
+                      border: Border.all(
+                          color: _pickedFile != null
+                              ? AppColors.primary
+                              : AppColors.divider,
+                          style: BorderStyle.solid,
+                          width: 1.5),
                       borderRadius: BorderRadius.circular(12),
-                      color: _pickedFile != null ? AppColors.primary.withValues(alpha: 0.05) : Colors.transparent,
+                      color: _pickedFile != null
+                          ? AppColors.primary.withValues(alpha: 0.05)
+                          : Colors.transparent,
                     ),
                     child: _pickedFile != null
                         ? Column(
                             children: [
-                              Icon(_getFileIcon(_pickedFile!.extension ?? ''), size: 40, color: AppColors.primary),
+                              Icon(_getFileIcon(_pickedFile!.extension ?? ''),
+                                  size: 40, color: AppColors.primary),
                               const SizedBox(height: 8),
-                              Text(_pickedFile!.name, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
-                              Text('${(_pickedFile!.size / 1024 / 1024).toStringAsFixed(2)} MB', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                              TextButton(onPressed: _pickFile, child: const Text('Change file')),
+                              Text(_pickedFile!.name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary)),
+                              Text(
+                                  '${(_pickedFile!.size / 1024 / 1024).toStringAsFixed(2)} MB',
+                                  style: const TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 12)),
+                              TextButton(
+                                  onPressed: _pickFile,
+                                  child: const Text('Change file')),
                             ],
                           )
                         : const Column(
                             children: [
-                              Icon(Icons.cloud_upload_outlined, size: 48, color: AppColors.textMuted),
+                              Icon(Icons.cloud_upload_outlined,
+                                  size: 48, color: AppColors.textMuted),
                               SizedBox(height: 12),
-                              Text('Tap to select file', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                              Text('Tap to select file',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textSecondary)),
                               SizedBox(height: 4),
-                              Text('PDF, JPG, PNG, JPEG • Max 10MB', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              Text('PDF, JPG, PNG, JPEG • Max 10MB',
+                                  style: TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 12)),
                             ],
                           ),
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Visibility', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Visibility',
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 10),
                 Row(
                   children: ContentVisibility.values.map((v) {
                     final selected = _visibility == v;
                     Color c;
-                    switch(v) {
-                      case ContentVisibility.private: c = AppColors.privateColor;
-                      case ContentVisibility.friendsOnly: c = AppColors.friendsColor;
-                      case ContentVisibility.public: c = AppColors.publicColor;
+                    switch (v) {
+                      case ContentVisibility.private:
+                        c = AppColors.privateColor;
+                      case ContentVisibility.friendsOnly:
+                        c = AppColors.friendsColor;
+                      case ContentVisibility.public:
+                        c = AppColors.publicColor;
                     }
                     return Expanded(
                       child: GestureDetector(
@@ -156,23 +226,49 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                         child: Container(
                           margin: const EdgeInsets.only(right: 6),
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(color: selected ? c : c.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: c.withValues(alpha: selected ? 1 : 0.3))),
-                          child: Text(v.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? Colors.white : c), textAlign: TextAlign.center),
+                          decoration: BoxDecoration(
+                              color: selected ? c : c.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color:
+                                      c.withValues(alpha: selected ? 1 : 0.3))),
+                          child: Text(v.label,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: selected ? Colors.white : c),
+                              textAlign: TextAlign.center),
                         ),
                       ),
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(value: _allowCopy, onChanged: (v) => setState(() => _allowCopy = v), title: const Text('Allow Copy', style: TextStyle(fontWeight: FontWeight.w600)), activeThumbColor: AppColors.primary, contentPadding: EdgeInsets.zero),
+                SwitchListTile(
+                    value: _allowCopy,
+                    onChanged: (v) => setState(() => _allowCopy = v),
+                    title: const Text('Allow Copy',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    activeThumbColor: AppColors.primary,
+                    contentPadding: EdgeInsets.zero),
                 if (_uploading) ...[
                   const SizedBox(height: 16),
-                  LinearProgressIndicator(value: _uploadProgress, backgroundColor: AppColors.divider, color: AppColors.primary),
+                  LinearProgressIndicator(
+                      value: _uploadProgress,
+                      backgroundColor: AppColors.divider,
+                      color: AppColors.primary),
                   const SizedBox(height: 4),
-                  Text('Uploading... ${(_uploadProgress * 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  Text(
+                      'Uploading... ${(_uploadProgress * 100).toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, fontSize: 12)),
                 ],
                 const SizedBox(height: 28),
-                AppButton(label: 'Upload Document', onPressed: _uploading ? null : _upload, isLoading: _uploading, icon: Icons.cloud_upload_outlined),
+                AppButton(
+                    label: 'Upload Document',
+                    onPressed: _uploading ? null : _upload,
+                    isLoading: _uploading,
+                    icon: Icons.cloud_upload_outlined),
               ],
             ),
           ),
@@ -183,11 +279,14 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
 
   IconData _getFileIcon(String ext) {
     switch (ext.toLowerCase()) {
-      case 'pdf': return Icons.picture_as_pdf;
+      case 'pdf':
+        return Icons.picture_as_pdf;
       case 'jpg':
       case 'jpeg':
-      case 'png': return Icons.image_outlined;
-      default: return Icons.attach_file;
+      case 'png':
+        return Icons.image_outlined;
+      default:
+        return Icons.attach_file;
     }
   }
 }

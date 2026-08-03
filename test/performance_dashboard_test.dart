@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_app/core/router/app_router.dart';
 import 'package:my_app/features/dashboard/presentation/providers/performance_provider.dart';
-import 'package:my_app/features/dashboard/presentation/screens/performance_dashboard_screen.dart';
 import 'package:my_app/shared/models/performance_model.dart';
+import 'package:my_app/shared/widgets/app_bottom_nav.dart';
 
 void main() {
   final report = PerformanceReport.fromJson(const {
@@ -130,12 +131,11 @@ void main() {
       autoLoad: false,
     );
 
+    appRouter.go('/dashboard?section=memory');
     await tester.pumpWidget(
       ProviderScope(
         overrides: [performanceProvider.overrideWith((ref) => notifier)],
-        child: const MaterialApp(
-          home: PerformanceDashboardScreen(initialSection: 'memory'),
-        ),
+        child: MaterialApp.router(routerConfig: appRouter),
       ),
     );
     await tester.pumpAndSettle();
@@ -143,5 +143,10 @@ void main() {
     expect(find.text('Memory & revision'), findsOneWidget);
     expect(find.text('Review Sorting practice'), findsOneWidget);
     expect(find.text('Due today'), findsWidgets);
+    expect(find.byType(AppBottomNav), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Subjects'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

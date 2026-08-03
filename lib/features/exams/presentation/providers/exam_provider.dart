@@ -266,12 +266,14 @@ class ExamNotifier extends StateNotifier<ExamState> {
   Future<bool> saveQuestionSelection(String examId, List<String> ids) async {
     state = state.copyWith(isActionLoading: true, error: null);
     try {
-      await _dio.put('/exams/$examId/question-bank', data: {'questionIds': ids});
+      await _dio
+          .put('/exams/$examId/question-bank', data: {'questionIds': ids});
       await ensureExam(examId, refresh: true);
       state = state.copyWith(isActionLoading: false, error: null);
       return true;
     } catch (error) {
-      state = state.copyWith(isActionLoading: false, error: apiErrorMessage(error));
+      state =
+          state.copyWith(isActionLoading: false, error: apiErrorMessage(error));
       return false;
     }
   }
@@ -281,6 +283,19 @@ class ExamNotifier extends StateNotifier<ExamState> {
       final response = await _dio.get('/exams/$examId/contributions');
       return (response.data['questions'] as List<dynamic>? ?? const [])
           .map((item) => QuestionModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (error) {
+      state = state.copyWith(error: apiErrorMessage(error));
+      return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>?> loadContributionLibrary(
+      String examId) async {
+    try {
+      final response = await _dio.get('/exams/$examId/contributions/library');
+      return (response.data['questions'] as List<dynamic>? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
           .toList();
     } catch (error) {
       state = state.copyWith(error: apiErrorMessage(error));

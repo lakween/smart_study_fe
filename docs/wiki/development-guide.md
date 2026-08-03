@@ -114,7 +114,7 @@ Backend:
 .venv\Scripts\python.exe -m pytest -q
 ```
 
-Current focused coverage includes compact-phone navigation/exam/performance widgets, exam and performance DTO parsing, spaced-repetition transitions, exam lifecycle/scoring/release rules, safe error mapping, rate limiting, and enum mapping. Continue adding route-level authorization and database integration coverage.
+Current focused coverage includes compact-phone navigation/exam/performance widgets, shell-owned performance navigation, the grouped exam question-library picker, exam and performance DTO parsing, spaced-repetition transitions, exam lifecycle/scoring/release rules, selectable error presentation, safe error mapping, rate limiting, enum mapping, and database-backed subject deep copy. Continue adding route-level authorization and database integration coverage.
 
 ## Known gaps and risks
 

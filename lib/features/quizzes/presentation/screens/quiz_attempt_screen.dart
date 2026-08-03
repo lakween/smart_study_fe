@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/question_model.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../providers/quiz_provider.dart';
 
 class QuizAttemptScreen extends ConsumerStatefulWidget {
@@ -66,9 +67,7 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
       setState(() => _starting = false);
       final message = ref.read(quizProvider).error ??
           'Could not start practice. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: AppColors.error),
-      );
+      AppMessage.error(context, message);
       return;
     }
 
@@ -210,8 +209,7 @@ class _QuizAttemptScreenState extends ConsumerState<QuizAttemptScreen> {
       setState(() => _submitting = false);
       final message = ref.read(quizProvider).error ??
           'Could not submit quiz. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: AppColors.error));
+      AppMessage.error(context, message);
       return;
     }
     await _clearDraft();

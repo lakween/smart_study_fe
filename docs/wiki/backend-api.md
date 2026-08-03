@@ -43,6 +43,7 @@ successful password reset revokes all refresh sessions.
 - `GET /subjects?visibility=&search=&archived=&sort=&page=&limit=` -> paginated owner-only subjects with batched viewer progress.
 - `GET /subjects/:id` -> `{ subject }` after visibility authorization.
 - `POST /subjects`: normalized `name`, optional `description`, `visibility`, `allowCopy`.
+- `POST /subjects/:id/copy`: optional `{ name }` body (empty body accepted); requires source visibility and, for non-owners, source `allowCopy`. Returns `{ subject, copied: { topics, quizzes, documents } }`. The destination is private/editable/non-copyable and contains only independently visible/copyable nested content; quiz questions are cloned, document file references are shared safely, and original-creator provenance is preserved.
 - `PATCH /subjects/:id`: owner-only partial update/archive. Narrowing visibility also narrows children transactionally.
 - `DELETE /subjects/:id`: owner-only; cascades topics, documents, quizzes, exams, and dependent records.
 
@@ -91,10 +92,12 @@ The provider selected by `AI_PROVIDER` returns structured output with supporting
 - New friend exams can be private collaborative lobbies. `POST /exams` accepts any positive `questionsPerParticipant` value and `contributionInstructions`; the organizer and accepted friends each submit exactly that quota.
 - `GET /exams/:id/contributions` returns only the authenticated participant's private contribution, and `PUT /exams/:id/contributions` atomically replaces it. Unicode-normalized duplicates are rejected without revealing another participant's question.
 - Collaborative `POST /exams/:id/publish` is organizer-only and requires all invitations resolved, at least two participants, and every participant ready. It snapshots all contributions into one common exam paper.
-- `subjectId` and `topicId` are optional for collaborative exams. `GET /exams/related?subjectId=&topicId=` returns authenticated-user-accessible exams for subject/topic detail tabs. Individual exams require a topic-backed question bank.
+- `subjectId`, `topicId`, and `startTime` are optional for individual and collaborative exams. A topic still requires its owned subject. `GET /exams/related?subjectId=&topicId=` returns authenticated-user-accessible exams for subject/topic detail tabs.
 - Participant and contribution arrays have no product-level maximum; questions-per-participant is any positive integer entered by the organizer.
 - `GET /exams?tab=mine|invited&page=&limit=` and `GET /exams/:id`: sanitized summaries; solutions are never included. Organizer summaries also expose accepted/pending/declined invitation totals, while all accessible summaries include participant submission progress.
 - `POST /exams`: creates and optionally publishes an exam with duration, question count, pass mark, shuffle setting, schedule, and accepted-friend invitees.
+- `GET /exams/:id/question-bank?subjectId=&topicId=&quizId=` returns the organizer's owned quiz-question catalog with selection metadata for an individual draft. `PUT /exams/:id/question-bank` accepts `{ questionIds }`, verifies ownership, replaces the selected paper, and updates the question count.
+- `GET /exams/:id/contributions/library` returns the authenticated participant's owned quiz-question catalog plus the exam quota for importing into their private contribution.
 - `PATCH/DELETE /exams/:id` and `POST /exams/:id/publish`: draft-only management.
 - `POST /exams/:id/invitations/respond`: accept or decline a pending invitation.
 - `POST /exams/:id/attempts`: atomically creates or resumes the user's single attempt and returns the authoritative server time/deadline plus a stable question order.
@@ -103,7 +106,7 @@ The provider selected by `AI_PROVIDER` returns structured output with supporting
 - `GET /exams/:id/results`: personal result, released solutions, and eligible leaderboard data.
 - `POST /exams/:id/cancel`: organizer-only cancellation with participant notifications.
 
-Published questions are snapshot copies sampled from the topic quiz pool. Correct answers and explanations stay server-side during an attempt. Individual results release after submission; friend-exam results release after the common close time. A 30-second lifecycle scan starts scheduled exams, auto-submits overdue saved answers, expires invitations, closes exams, and creates durable notifications. The compatibility `POST /exams/:id/start` route only creates/resumes a secure attempt for older clients.
+Published individual questions are snapshots of the organizer's explicit owned-quiz selection. Collaborative papers snapshot every accepted participant's private contribution. Correct answers and explanations stay server-side during an attempt. Individual results release after submission; friend-exam results release after the common close time. A 30-second lifecycle scan starts scheduled exams, auto-submits overdue saved answers, expires invitations, closes exams, and creates durable notifications. The compatibility `POST /exams/:id/start` route only creates/resumes a secure attempt for older clients.
 
 ## Friends (`smart_study_backend/app/routers/friends.py`)
 

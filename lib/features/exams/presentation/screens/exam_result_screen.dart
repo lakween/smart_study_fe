@@ -58,7 +58,7 @@ class _ExamResultScreenState extends ConsumerState<ExamResultScreen> {
                 const Icon(Icons.hourglass_empty_rounded,
                     size: 54, color: AppColors.textMuted),
                 const SizedBox(height: 14),
-                Text(
+                SelectableText(
                   _error ?? 'Your result is not available yet.',
                   textAlign: TextAlign.center,
                 ),

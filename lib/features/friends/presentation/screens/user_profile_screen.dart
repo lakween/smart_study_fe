@@ -12,6 +12,7 @@ import '../../../../shared/models/subject_model.dart';
 import '../../../../shared/models/topic_model.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/profile_cover.dart';
 import '../../../../shared/widgets/content_copy_destination_dialog.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -116,8 +117,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final subjects =
         ref.read(subjectProvider).subjects.where((s) => !s.isArchived).toList();
     if (subjects.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Create a subject first, then try copying again.')));
+      AppMessage.error(
+        context,
+        'Create a subject first, then try copying again.',
+      );
       return null;
     }
     String selected = subjects.first.id;
@@ -156,7 +159,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     if (subjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Create a subject before copying this topic.'),
+          content: const SelectableText(
+            'Create a subject before copying this topic.',
+          ),
+          duration: const Duration(days: 1),
           action: SnackBarAction(
             label: 'Create',
             onPressed: () => context.push('/subjects/create'),
@@ -188,8 +194,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+        AppMessage.error(context, apiErrorMessage(e));
       }
     }
   }
@@ -231,8 +236,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+        AppMessage.error(context, apiErrorMessage(e));
       }
     }
   }
@@ -249,8 +253,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+        AppMessage.error(context, apiErrorMessage(e));
       }
     }
   }
@@ -263,7 +266,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     if (subjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Create a subject before copying this quiz.'),
+          content: const SelectableText(
+            'Create a subject before copying this quiz.',
+          ),
+          duration: const Duration(days: 1),
           action: SnackBarAction(
             label: 'Create',
             onPressed: () => context.push('/subjects/create'),
@@ -321,8 +327,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+        AppMessage.error(context, apiErrorMessage(e));
       }
     }
   }
@@ -348,7 +353,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (_error != null || _data == null) {
-      return Scaffold(body: Center(child: Text(_error ?? 'User not found')));
+      return Scaffold(
+        body: Center(
+          child: SelectableText(
+            _error ?? 'User not found',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
     }
 
     final user = _data!.user;
@@ -470,16 +482,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       icon: Icons.book_outlined,
                       title: 'No visible subjects',
                       message: 'This user has no subjects visible to you')
-                  : GridView.builder(
+                  : ListView.separated(
                       padding: AppSpacing.list,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 1,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              mainAxisExtent: 296),
                       itemCount: publicSubjects.length +
                           (_data!.hasLockedSubjects ? 1 : 0),
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (_, i) {
                         if (i == publicSubjects.length) {
                           return _LockedContentCard(

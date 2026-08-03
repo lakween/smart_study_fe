@@ -98,7 +98,8 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> {
             : Center(
                 child: Padding(
                   padding: AppSpacing.page,
-                  child: Text(state.error!, textAlign: TextAlign.center),
+                  child:
+                      SelectableText(state.error!, textAlign: TextAlign.center),
                 ),
               ),
       );

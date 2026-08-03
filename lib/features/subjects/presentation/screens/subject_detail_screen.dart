@@ -10,6 +10,7 @@ import '../../../../shared/models/quiz_model.dart';
 import '../../../../shared/models/subject_model.dart';
 import '../../../../shared/models/topic_model.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/content_copy_destination_dialog.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -72,7 +73,10 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     if (subjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Create a subject before copying this topic.'),
+          content: const SelectableText(
+            'Create a subject before copying this topic.',
+          ),
+          duration: const Duration(days: 1),
           action: SnackBarAction(
             label: 'Create',
             onPressed: () => context.push('/subjects/create'),
@@ -105,9 +109,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       );
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(apiErrorMessage(error))),
-        );
+        AppMessage.error(context, apiErrorMessage(error));
       }
     }
   }
@@ -120,7 +122,10 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     if (subjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Create a subject before copying this quiz.'),
+          content: const SelectableText(
+            'Create a subject before copying this quiz.',
+          ),
+          duration: const Duration(days: 1),
           action: SnackBarAction(
             label: 'Create',
             onPressed: () => context.push('/subjects/create'),
@@ -179,9 +184,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       );
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(apiErrorMessage(error))),
-        );
+        AppMessage.error(context, apiErrorMessage(error));
       }
     }
   }
@@ -223,8 +226,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       );
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiErrorMessage(error))));
+        AppMessage.error(context, apiErrorMessage(error));
       }
     }
   }
@@ -254,7 +256,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  const SelectableText(
                     'It may be private, removed, or no longer shared with you.',
                     textAlign: TextAlign.center,
                   ),

@@ -1586,7 +1586,7 @@ class _InlineError extends StatelessWidget {
               color: AppColors.error, size: 17),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: SelectableText(
               message,
               style: const TextStyle(color: AppColors.error, fontSize: 11),
             ),

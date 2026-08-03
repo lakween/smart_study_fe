@@ -42,7 +42,7 @@ Authentication: `/splash`, `/login`, `/register`, `/forgot-password`.
 
 Shell tabs: `/home/dashboard`, `/home/subjects`, `/home/exams`, `/home/friends`, `/home/profile`.
 
-Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/detail/private-contribution/attempt/result; friend requests, friend discovery, and user profile; notifications, performance dashboard, settings, and profile edit.
+Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/detail/question-library/private-contribution/attempt/result; friend requests, friend discovery, and user profile; notifications, settings, and profile edit. My Performance uses `/dashboard` and `/dashboard?section=memory`, but both routes remain inside the authenticated shell so the bottom dock stays visible with Home selected.
 
 Keep route parameter names aligned with screen constructor requirements. Add specific static routes before overlapping parameterized routes when route matching could be ambiguous.
 
@@ -59,7 +59,8 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 - `darkModeProvider` persists the user's choice and is overridden at startup with the saved value.
 - Screens render loading, error, empty, and content states and offer retry or pull-to-refresh when appropriate.
 - Forms own `TextEditingController`, selection, and validation state locally, then delegate mutations to a notifier.
-- Shared widgets include app buttons, cards, text fields, bottom navigation, avatars, confirmation dialogs, empty/error states, shimmer loaders, cards/tiles, badges, score circles, stats, and section headers.
+- `ExamQuestionLibraryPicker` is shared by individual exam paper selection and friend-question imports. It separates selected quiz groups from the available library while retaining search, subject/topic/quiz filters, whole-quiz actions, per-question actions, and an optional maximum selection.
+- Shared widgets include app buttons, cards, text fields, bottom navigation, avatars, confirmation dialogs, empty/error states, shimmer loaders, cards/tiles, badges, score circles, stats, section headers, and `AppMessage`. Action failures use long-lived selectable `AppMessage.error` snackbars with close/swipe dismissal; persistent `ErrorState` details are selectable too.
 
 ## Design language
 
@@ -67,7 +68,7 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 - Light scaffold uses a warm blue-gray neutral and bordered white cards; dark scaffold uses ink navy with elevated blue-gray surfaces.
 - Manrope typography, rounded 16px controls, rounded 20-28px elevated surfaces, restrained layered shadows, and full-width 52px primary actions.
 - The authenticated shell uses a floating rounded `NavigationBar` dock. The home screen leads with a gradient focus hero, compact metrics, two high-value quick actions, a Memory Plan summary, revision queue, and rich recent-learning cards. Memory Plan shows real due/upcoming/active schedule counts; revision cards display the backend interval stage, last recall score, and next-review timing. The newest attempt is featured; compact history cards preserve score, subject/topic, correctness, duration, AI origin, and practice mode.
-- My Performance uses typed report models and real server aggregates for prior-period comparison, daily consistency, streaks, memory stages, actionable reviews, rankings, and completion-dated exam history. Home opens `/dashboard?section=memory` when the learner selects Memory Plan.
+- My Performance uses typed report models and real server aggregates for prior-period comparison, daily consistency, streaks, memory stages, actionable reviews, rankings, and completion-dated exam history. Home opens `/dashboard?section=memory` when the learner selects Memory Plan, and the shell-owned route keeps the navigation dock visible.
 - Use theme colors instead of hard-coded light-only colors. Preserve responsive scrolling and avoid fixed layouts that overflow small phones or text scaling.
 - Use `AppSpacing` for screen-level layout: 20px page gutters, 12px item gaps, and 24px section gaps. Keep smaller spacing values inside components rather than using them at page edges.
 

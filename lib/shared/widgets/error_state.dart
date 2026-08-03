@@ -24,14 +24,16 @@ class ErrorState extends StatelessWidget {
                 color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.error_outline, size: 40, color: AppColors.error),
+              child: const Icon(Icons.error_outline,
+                  size: 40, color: AppColors.error),
             ),
             const SizedBox(height: 16),
             Text('Something went wrong', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text(
+            SelectableText(
               message,
-              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[

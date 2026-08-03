@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../providers/subject_provider.dart';
@@ -15,10 +16,12 @@ class CreateEditSubjectScreen extends ConsumerStatefulWidget {
   const CreateEditSubjectScreen({super.key, this.subjectId});
 
   @override
-  ConsumerState<CreateEditSubjectScreen> createState() => _CreateEditSubjectScreenState();
+  ConsumerState<CreateEditSubjectScreen> createState() =>
+      _CreateEditSubjectScreenState();
 }
 
-class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScreen> {
+class _CreateEditSubjectScreenState
+    extends ConsumerState<CreateEditSubjectScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
@@ -37,14 +40,21 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
         if (subject != null) {
           _nameCtrl.text = subject.name;
           _descCtrl.text = subject.description ?? '';
-          setState(() { _visibility = subject.visibility; _allowCopy = subject.allowCopy; });
+          setState(() {
+            _visibility = subject.visibility;
+            _allowCopy = subject.allowCopy;
+          });
         }
       });
     }
   }
 
   @override
-  void dispose() { _nameCtrl.dispose(); _descCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _nameCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -53,25 +63,34 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
     if (isEditing) {
       final subject = ref.read(subjectByIdProvider(widget.subjectId!))!;
       saved = await ref.read(subjectProvider.notifier).updateSubject(
-        subject.copyWith(name: _nameCtrl.text.trim(), description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(), visibility: _visibility, allowCopy: _allowCopy),
-      );
+            subject.copyWith(
+                name: _nameCtrl.text.trim(),
+                description: _descCtrl.text.trim().isEmpty
+                    ? null
+                    : _descCtrl.text.trim(),
+                visibility: _visibility,
+                allowCopy: _allowCopy),
+          );
     } else {
       saved = await ref.read(subjectProvider.notifier).createSubject(
-        name: _nameCtrl.text.trim(),
-        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-        visibility: _visibility, allowCopy: _allowCopy,
-      );
+            name: _nameCtrl.text.trim(),
+            description:
+                _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+            visibility: _visibility,
+            allowCopy: _allowCopy,
+          );
     }
     if (!mounted) return;
     setState(() => _saving = false);
     if (saved) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isEditing ? 'Subject updated!' : 'Subject created!'), backgroundColor: AppColors.success));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isEditing ? 'Subject updated!' : 'Subject created!'),
+          backgroundColor: AppColors.success));
       context.pop(true);
     } else {
-      final message = ref.read(subjectProvider).error ?? 'Could not save the subject. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: AppColors.error),
-      );
+      final message = ref.read(subjectProvider).error ??
+          'Could not save the subject. Please try again.';
+      AppMessage.error(context, message);
     }
   }
 
@@ -79,7 +98,8 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(isEditing ? 'Edit Subject' : 'Create Subject')),
+      appBar:
+          AppBar(title: Text(isEditing ? 'Edit Subject' : 'Create Subject')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppSpacing.form,
@@ -88,21 +108,37 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppTextField(label: 'Subject Name *', controller: _nameCtrl, prefixIcon: Icons.book_outlined, validator: Validators.subjectName),
+                AppTextField(
+                    label: 'Subject Name *',
+                    controller: _nameCtrl,
+                    prefixIcon: Icons.book_outlined,
+                    validator: Validators.subjectName),
                 const SizedBox(height: 16),
-                AppTextField(label: 'Description (optional)', controller: _descCtrl, maxLines: 3, prefixIcon: Icons.description_outlined),
+                AppTextField(
+                    label: 'Description (optional)',
+                    controller: _descCtrl,
+                    maxLines: 3,
+                    prefixIcon: Icons.description_outlined),
                 const SizedBox(height: 20),
-                Text('Visibility', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Visibility',
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 10),
                 Row(
                   children: ContentVisibility.values.map((v) {
                     final selected = _visibility == v;
                     Color c;
                     IconData ic;
-                    switch(v) {
-                      case ContentVisibility.private: c = AppColors.privateColor; ic = Icons.lock_outline;
-                      case ContentVisibility.friendsOnly: c = AppColors.friendsColor; ic = Icons.people_outline;
-                      case ContentVisibility.public: c = AppColors.publicColor; ic = Icons.public;
+                    switch (v) {
+                      case ContentVisibility.private:
+                        c = AppColors.privateColor;
+                        ic = Icons.lock_outline;
+                      case ContentVisibility.friendsOnly:
+                        c = AppColors.friendsColor;
+                        ic = Icons.people_outline;
+                      case ContentVisibility.public:
+                        c = AppColors.publicColor;
+                        ic = Icons.public;
                     }
                     return Expanded(
                       child: GestureDetector(
@@ -113,13 +149,20 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
                           decoration: BoxDecoration(
                             color: selected ? c : c.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: c.withValues(alpha: selected ? 1 : 0.3)),
+                            border: Border.all(
+                                color: c.withValues(alpha: selected ? 1 : 0.3)),
                           ),
                           child: Column(
                             children: [
-                              Icon(ic, size: 18, color: selected ? Colors.white : c),
+                              Icon(ic,
+                                  size: 18, color: selected ? Colors.white : c),
                               const SizedBox(height: 4),
-                              Text(v.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? Colors.white : c), textAlign: TextAlign.center),
+                              Text(v.label,
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: selected ? Colors.white : c),
+                                  textAlign: TextAlign.center),
                             ],
                           ),
                         ),
@@ -131,22 +174,34 @@ class _CreateEditSubjectScreenState extends ConsumerState<CreateEditSubjectScree
                 SwitchListTile(
                   value: _allowCopy,
                   onChanged: (v) => setState(() => _allowCopy = v),
-                  title: const Text('Allow Copy', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Allow other users to copy this content to their account'),
+                  title: const Text('Allow Copy',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text(
+                      'Allow other users to copy this content to their account'),
                   activeThumbColor: AppColors.primary,
                   contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: 28),
-                AppButton(label: isEditing ? 'Save Changes' : 'Create Subject', onPressed: _saving ? null : _save, isLoading: _saving),
+                AppButton(
+                    label: isEditing ? 'Save Changes' : 'Create Subject',
+                    onPressed: _saving ? null : _save,
+                    isLoading: _saving),
                 if (isEditing) ...[
                   const SizedBox(height: 12),
                   AppButton(
                     label: 'Delete Subject',
                     variant: AppButtonVariant.outlined,
                     onPressed: () async {
-                      final ok = await ConfirmDialog.show(context, title: 'Delete Subject', message: 'This will permanently delete the subject and all its content.', confirmLabel: 'Delete', isDestructive: true);
+                      final ok = await ConfirmDialog.show(context,
+                          title: 'Delete Subject',
+                          message:
+                              'This will permanently delete the subject and all its content.',
+                          confirmLabel: 'Delete',
+                          isDestructive: true);
                       if (ok == true && context.mounted) {
-                        final deleted = await ref.read(subjectProvider.notifier).deleteSubject(widget.subjectId!);
+                        final deleted = await ref
+                            .read(subjectProvider.notifier)
+                            .deleteSubject(widget.subjectId!);
                         if (deleted && context.mounted) context.pop(true);
                       }
                     },

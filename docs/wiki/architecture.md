@@ -45,6 +45,8 @@ Drill-down routes:
 - Social/profile: `/friends/requests`, `/friends/find`, `/users/:userId/profile`, `/profile/edit`
 - Utility: `/notifications`, `/dashboard`, `/dashboard?section=memory`, `/settings`
 
+`/dashboard` and its memory deep link are children of the authenticated shell, even though they are not separate dock destinations. The performance view keeps the floating bottom dock visible and resolves to the Home item.
+
 There is no global GoRouter redirect. Splash performs the token check and navigates to login or the dashboard.
 
 ## State flow
@@ -90,14 +92,14 @@ keystore is configured.
 
 ## Visibility and ownership
 
-Content visibility is `private`, `friendsOnly`, or `public`. Backend helpers in `friends.routes.ts` are the authority:
+Content visibility is `private`, `friendsOnly`, or `public`. FastAPI authorization services and repositories are the authority:
 
 - Owners always have access.
 - Public content is available to authenticated viewers.
 - Friends-only content requires an accepted friendship.
 - Private content is owner-only.
 
-Mutation routes separately require ownership. `allowCopy` currently has a working document-copy route; equivalent subject/topic/quiz copy operations are not implemented.
+Mutation routes separately require ownership. Subject, topic, quiz, and document copy routes enforce visibility and `allowCopy`. A subject deep copy creates a private destination and includes only independently visible/copyable nested content while preserving original-creator provenance.
 
 ## Shared UI system
 
@@ -109,3 +111,5 @@ include buttons, cards, fields, avatars, confirmation dialogs, empty/error
 states, shimmer loaders, list cards, score circles, stats, section headers,
 and visibility badges. Feature pages should reuse these before adding local
 variants.
+
+Action failures use the shared `AppMessage.error` snackbar: the backend message is selectable, remains visible until dismissed, and includes close/swipe dismissal. Persistent error-state messages also use selectable text, so users can copy diagnostics without a dedicated Copy button.

@@ -88,7 +88,9 @@ class _TopicDetailScreenState extends ConsumerState<TopicDetailScreen> {
         body: sharedSubject.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) => const Center(
-            child: Text('This subject is no longer available to you.'),
+            child: SelectableText(
+              'This subject is no longer available to you.',
+            ),
           ),
           data: (_) => const SizedBox.shrink(),
         ),

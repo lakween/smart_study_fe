@@ -17,7 +17,7 @@ The provider owns login, registration, session validation, password-reset reques
 Providers: `dashboardProvider`, `performanceProvider`.
 
 - `HomeDashboardScreen`: summary stats, notification badge, due revisions, last subject/topic, quick actions, and a rich recent-learning section. The newest quiz result is featured with score progress, subject/topic, correctness, duration, AI origin, and timed/untimed mode; older attempts use compact contextual cards.
-- `PerformanceDashboardScreen`: premium 7-day/30-day/all-time dashboard backed by typed `PerformanceReport` models. It shows overall score and comparison, pass/activity metrics, an actionable recommendation, deep-linkable Memory & Revision details, touch-enabled score and consistency charts, navigable subject/topic rankings, completion-dated exam history, and personalized insights. `/dashboard?section=memory` scrolls directly to the memory section.
+- `PerformanceDashboardScreen`: premium 7-day/30-day/all-time dashboard backed by typed `PerformanceReport` models. It shows overall score and comparison, pass/activity metrics, an actionable recommendation, deep-linkable Memory & Revision details, touch-enabled score and consistency charts, navigable subject/topic rankings, completion-dated exam history, and personalized insights. `/dashboard?section=memory` scrolls directly to the memory section. Both performance routes stay inside `ShellRoute`, keeping the bottom dock visible with Home selected.
 
 Home summary values remain a small API map, while performance analytics use typed `PerformanceReport`, summary, consistency, memory, revision, breakdown, insight, recommendation, and exam-history models.
 
@@ -28,6 +28,7 @@ Provider: `subjectProvider`. Model: `SubjectModel`.
 - `SubjectListScreen`: searchable/filterable subject list, refresh, edit, delete, and create.
 - `SubjectDetailScreen`: tabs for topics, quizzes, and documents plus owner actions.
 - `CreateEditSubjectScreen`: create/edit form for name, description, visibility, copying permission, and deletion.
+- Foreign subject cards/details expose Copy only when allowed. Copying creates a private subject in My Subjects and deep-copies the source's independently visible/copyable topics, quizzes, quiz questions, and documents.
 
 Creation prepends locally, updates replace by ID, and deletion removes by ID. **My Subjects** is owner-only; public and accepted-friend subjects are not mixed into this personal workspace.
 
@@ -73,14 +74,15 @@ PDF input is text-extracted; image bytes go directly to the server-selected Open
 Provider: `examProvider`. Models: `ExamModel`, `ExamParticipant`, `ExamAttemptModel`, and `ExamResultModel`.
 
 - `ExamListScreen`: collapsible exam dashboard with live/upcoming/action/completed totals, next-exam countdown, organizer performance, search, status filters, sorting, paginated My Exams/Invited tabs, and per-exam invitation/submission progress.
-- `CreateExamScreen`: optional subject/topic classification for collaborative exams, individual/friend mode, free numeric questions-per-participant, duration, pass mark, shuffle behavior, start time, instructions, and an uncapped friend selection list. Individual exams still require a topic question bank.
+- `CreateExamScreen`: optional subject/topic classification and optional start time for both individual and friend modes, free numeric questions-per-participant, duration, pass mark, shuffle behavior, contribution instructions, and an uncapped friend selection list.
+- `IndividualExamQuestionsScreen`: draft paper builder over every question in the organizer's own quizzes. It supports search and subject/topic/quiz filters, whole-quiz or per-question selection, separate Selected quizzes and Available quiz library sections, draft saving, and publishing. Published papers are locked.
 - `ExamDetailScreen`: secure preflight, private collaborative-lobby readiness, invitation response, per-participant contribution counts, blind organizer publishing, cancellation, and start/resume/results actions.
-- `ExamContributionScreen`: private dynamic question forms with four options, correct answer, optional explanation, Unicode-safe duplicate protection, and no access to another participant's content.
+- `ExamContributionScreen`: private dynamic question forms with four options, correct answer, optional explanation, Unicode-safe duplicate protection, and no access to another participant's content. Participants may import whole quizzes or individual questions from their own quiz library through the same grouped picker, capped at their exact quota.
 - Subject and topic detail screens include an Exams tab for authenticated-user-accessible exams that selected that classification.
 - `ExamAttemptScreen`: server-clock countdown, stable question order, answer resume/autosave, guarded exit, and idempotent submission.
 - `ExamResultScreen`: pass/fail summary, conditionally released leaderboard, and solution review.
 
-Questions are snapshot-copied from existing quiz questions for the selected topic. An exam cannot be published without questions. Attempt payloads omit solutions, and friend results stay hidden until the shared close time. `exam:changed` events silently refresh list/detail state while durable notifications provide history.
+Individual questions are snapshot-copied from the organizer's selected owned-quiz questions; friend papers snapshot each participant's private contribution. An exam cannot be published without questions. Attempt payloads omit solutions, and friend results stay hidden until the shared close time. `exam:changed` events silently refresh list/detail state while durable notifications provide history.
 
 ## Friends and public profiles
 
@@ -126,3 +128,7 @@ Only dark mode is persisted and applied. Font size is in-memory and not applied 
 - `FriendModel`, `NotificationModel`.
 
 Numeric parsing should continue through `num` before conversion. Dates are ISO-8601 strings. Answer labels sent to the server are uppercase A-D.
+
+## Shared error presentation
+
+Use `AppMessage.error` for action failures and `ErrorState` for persistent failures. Both render the diagnostic message as selectable text; the snackbar remains until close/swipe dismissal so users can select and copy the exact server response without a separate Copy button.

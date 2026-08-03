@@ -5,6 +5,7 @@
 - [Networking and authentication](#networking-and-authentication)
 - [Core domains](#core-domains)
 - [Provider/API ownership](#providerapi-ownership)
+- [Subject deep-copy contract](#subject-deep-copy-contract)
 - [Real-time contract](#real-time-contract)
 - [Spaced-repetition contract](#spaced-repetition-contract)
 - [Nested creation and quiz practice](#nested-creation-and-quiz-practice)
@@ -18,7 +19,7 @@
 
 The current app constants default release builds to the deployed HTTPS backend when no override is supplied. URL changes are compile-time changes, so rebuild and reinstall the APK. Always inspect `AppConstants.baseUrl` rather than assuming localhost behavior.
 
-Use the backend `{ "error": "..." }` message through `apiErrorMessage`; generic 500 responses never expose database internals and include a request ID. Access and rotating refresh tokens live in secure storage. Dio shares one refresh operation, retries a failed authenticated request once, and signs out only when refresh/retry fails. Socket authentication follows the same refresh-first behavior.
+Use the backend `{ "error": "..." }` message through `apiErrorMessage`; generic 500 responses never expose database internals and include a request ID. Present action failures with `AppMessage.error` and persistent error details with `SelectableText` so the exact message can be selected and copied. Access and rotating refresh tokens live in secure storage. Dio shares one refresh operation, retries a failed authenticated request once, and signs out only when refresh/retry fails. Socket authentication follows the same refresh-first behavior.
 
 Auth endpoints include register, login, current user, forgot password, profile update, avatar upload, password/email change, and account deletion. Successful login/register stores `token`; sign-out clears it.
 
@@ -42,7 +43,7 @@ Enums serialize using existing `name` or label behavior. Check each model before
 ## Provider/API ownership
 
 - `authProvider`: authentication, session check, password reset, profile and avatar.
-- `subjectProvider`: owner-only personal subject CRUD and entity lookup. Public/friend subjects do not belong in My Subjects.
+- `subjectProvider`: owner-only personal subject CRUD and entity lookup. Public/friend subjects do not belong in My Subjects; successful foreign subject copies refresh the owner's subject collection.
 - `topicProvider`: subject-filtered loading, topic CRUD/copy, entity/filter lookup.
 - `documentProvider`: multipart upload with progress, delete/copy, entity/filter lookup.
 - `quizProvider`: entity cache plus paginated management/discovery list, create/edit/delete, server practice sessions, attempt submission/results, and entity lookup.
@@ -53,6 +54,14 @@ Enums serialize using existing `name` or label behavior. Check each model before
 - `performanceProvider`: typed period-filtered `PerformanceReport` with summary/comparison, score trend, real daily activity and streaks, memory stages and revision queue, subject/topic rankings, recommendations, insights, and completion-dated exam history.
 
 Prefer provider-owned API calls. A few specialized screens currently call Dio directly (AI generation, user profile detail, settings mutations); follow that only when the operation has no reusable feature state, otherwise place it in the responsible notifier.
+
+## Subject deep-copy contract
+
+- `POST /subjects/:id/copy` accepts an optional JSON `{ "name": "..." }`; an empty body is valid. It returns `{ subject, copied: { topics, quizzes, documents } }` with copied-item counts.
+- The source subject must be visible to the authenticated viewer. A non-owner may copy only when the subject's `allowCopy` is true.
+- The copied subject belongs to the viewer and is private, active, editable, and non-copyable. Preserve `copiedFromId` plus the earliest immutable original-creator identity.
+- Copy only nested topics, quizzes, and documents that are visible to the viewer and independently allow copying. A quiz is copied only with a copied parent topic; all of its questions are cloned. A topic-scoped document is skipped if that topic is not copied.
+- Copied documents reuse the protected stored file reference. Delete the physical file only after its final database reference is gone.
 
 ## Real-time contract
 
@@ -86,6 +95,8 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 - Quiz `timeLimitMinutes` is nullable and constrained to 1-180 when present.
 - Attempt startup offers timed mode only when a limit exists and always offers untimed mode. Timed mode auto-submits at zero; both modes record elapsed time.
 - Subject/topic/quiz text schemas remove NUL characters before validation to prevent PostgreSQL UTF-8 `0x00` errors.
+- Individual exam creation may omit subject, topic, and start time. The organizer then builds the draft paper through `GET /exams/:id/question-bank` and `PUT /exams/:id/question-bank` using questions from any owned quiz.
+- `ExamQuestionLibraryPicker` groups the catalog by quiz, keeps selected and available groups separate, supports search and subject/topic/quiz filters, and allows whole-quiz or individual-question add/remove. The same picker imports a participant's own quiz questions into friend contributions while enforcing the contribution quota.
 
 ## Exam lifecycle and security
 
@@ -93,7 +104,7 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 - Collaborative invitations are created while the exam is `DRAFT`. Publishing is organizer-only and is blocked until all invitations are resolved, at least two participants remain, and every participant has submitted exactly the quota. The organizer is also a normal participant and must contribute.
 - Contribution duplicates are rejected from Unicode-normalized question text under a per-exam database lock. The error never reveals the existing question. Instructions should divide subject areas to reduce semantic duplicates without requiring an AI call.
 - Publishing snapshots every accepted contribution into the common exam question set. Everyone receives the same questions, with stable per-attempt order shuffling; friend-exam solutions still wait until shared completion.
-- Collaborative exams may be unclassified: `subjectId` and `topicId` are optional. A selected topic requires its owned subject; selected classifications surface accessible related exams inside subject/topic detail tabs. Individual exams still require a topic because their questions come from that quiz bank.
+- Individual and collaborative exams may be unclassified: `subjectId`, `topicId`, and `startTime` are optional. A selected topic requires its owned subject; selected classifications surface accessible related exams inside subject/topic detail tabs. Individual question selection is organizer-owned across the organizer's quiz library rather than restricted to one classified topic.
 - Participant IDs and questions-per-participant use positive, user-entered counts without product-level list caps; transport/body and infrastructure protections remain authoritative. Do not reintroduce preset-only question chips.
 - `POST /exams/:id/attempts` creates or resumes the unique exam+user attempt and returns `serverNow`; calculate countdowns from `deadlineAt` with that clock offset.
 - Autosave with `PUT /exams/:id/attempts/:attemptId/answers`; submit with `POST /exams/:id/attempts/:attemptId/submit`; both validate question ownership and the authenticated attempt owner.

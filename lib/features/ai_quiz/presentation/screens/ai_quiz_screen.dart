@@ -15,6 +15,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/question_model.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../quizzes/presentation/providers/quiz_provider.dart';
 import '../../../subjects/presentation/providers/subject_provider.dart';
 import '../../../topics/presentation/providers/topic_provider.dart';
@@ -93,15 +94,11 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
 
   Future<void> _generate() async {
     if (_file == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please select a file'),
-          backgroundColor: AppColors.error));
+      AppMessage.error(context, 'Please select a file');
       return;
     }
     if (_languageController.text.trim().length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please enter a valid quiz language'),
-          backgroundColor: AppColors.error));
+      AppMessage.error(context, 'Please enter a valid quiz language');
       return;
     }
     setState(() {
@@ -161,8 +158,7 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
           _genError = apiErrorMessage(e,
               fallback: 'Could not generate quiz from this document');
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(_genError!), backgroundColor: AppColors.error));
+        AppMessage.error(context, _genError!);
       }
     } finally {
       await progressTimer.cancel();
@@ -219,13 +215,11 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
       setState(() => _questions[index] = replacement);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(apiErrorMessage(
-              error,
-              fallback: 'Could not regenerate this question',
-            )),
-            backgroundColor: AppColors.error,
+        AppMessage.error(
+          context,
+          apiErrorMessage(
+            error,
+            fallback: 'Could not regenerate this question',
           ),
         );
       }
@@ -238,15 +232,15 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
 
   Future<void> _saveQuiz() async {
     if (_subjectId == null || _topicId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please go back and select a subject and topic'),
-          backgroundColor: AppColors.error));
+      AppMessage.error(
+        context,
+        'Please go back and select a subject and topic',
+      );
       return;
     }
     final validationError = _questionValidationError();
     if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(validationError), backgroundColor: AppColors.error));
+      AppMessage.error(context, validationError);
       return;
     }
     setState(() => _saving = true);
@@ -280,8 +274,7 @@ class _AiQuizScreenState extends ConsumerState<AiQuizScreen> {
       context.go('/home/dashboard');
     } else {
       final error = ref.read(quizProvider).error ?? 'Could not save quiz';
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: AppColors.error));
+      AppMessage.error(context, error);
     }
   }
 

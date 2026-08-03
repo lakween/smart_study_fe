@@ -35,7 +35,7 @@ User
 - `User`: authentication/profile fields, hashed expiring password-reset data, refresh sessions, ownership, attempts, and participation relations.
 - `RefreshToken`: hashed rotating session token with expiry, revocation, replacement, and user relation.
 - `Friendship`: directional requester/addressee pair with a unique directional constraint; application logic prevents reverse duplicates.
-- `Subject`: owner-controlled container with visibility and copy flag.
+- `Subject`: owner-controlled container with visibility/copy flags plus `originalCreatorId`, `originalCreatorName`, and `copiedFromId` provenance for deep copies. A copied subject is private and non-copyable by default.
 - `Topic`: belongs to a subject and carries its own visibility/copy fields, though access is primarily gated through its subject.
 - `Document`: subject required, topic optional, URL/type/size metadata, owner and visibility.
 - `Quiz`: subject/topic/owner, visibility, AI flag, optional time limit, questions and attempts.
@@ -44,7 +44,7 @@ User
 - `QuizAttempt`: user/quiz score summary, server-recorded duration/session relation, and answer rows.
 - `QuestionAnswer`: selected option and correctness for one attempted question.
 - `SpacedRepetition`: one row per user+quiz, with topic, score, interval, and next date.
-- `Exam`: subject/topic, organizer, type/status/timing, copied questions and participants.
+- `Exam`: optional subject/topic/start time, organizer, type/status/timing, snapshot questions and participants. Individual drafts select snapshots from any organizer-owned quiz; collaborative drafts snapshot each participant's private contribution on publish.
 - Exam subject/topic foreign keys are nullable and use `ON DELETE SET NULL`, so a general exam needs no classification and an existing exam survives classification deletion. Indexed nullable keys support related-exam tabs.
 - Collaborative exams set nullable `questionsPerParticipant` and `contributionInstructions`. `ExamQuestionContribution` stores each participant's private question/options/answer and a Unicode-normalized per-exam duplicate key until publish copies the complete set into `Question` snapshots.
 - `ExamParticipant`: unique exam+user result and completion state.

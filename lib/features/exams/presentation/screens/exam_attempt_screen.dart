@@ -578,7 +578,7 @@ class _AttemptError extends StatelessWidget {
             const Icon(Icons.event_busy_outlined,
                 size: 56, color: AppColors.textMuted),
             const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
+            SelectableText(message, textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: onRetry,

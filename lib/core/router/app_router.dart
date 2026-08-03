@@ -67,6 +67,12 @@ final appRouter = GoRouter(
             builder: (_, __) => const FriendsListScreen()),
         GoRoute(
             path: '/home/profile', builder: (_, __) => const MyProfileScreen()),
+        GoRoute(
+          path: '/dashboard',
+          builder: (_, state) => PerformanceDashboardScreen(
+            initialSection: state.uri.queryParameters['section'],
+          ),
+        ),
       ],
     ),
 
@@ -155,8 +161,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/exams/:examId/questions',
-      builder: (_, state) =>
-          IndividualExamQuestionsScreen(examId: state.pathParameters['examId']!),
+      builder: (_, state) => IndividualExamQuestionsScreen(
+          examId: state.pathParameters['examId']!),
     ),
     GoRoute(
       path: '/exams/:examId',
@@ -190,12 +196,6 @@ final appRouter = GoRouter(
     GoRoute(
         path: '/notifications',
         builder: (_, __) => const NotificationsScreen()),
-    GoRoute(
-      path: '/dashboard',
-      builder: (_, state) => PerformanceDashboardScreen(
-        initialSection: state.uri.queryParameters['section'],
-      ),
-    ),
     GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
     GoRoute(
         path: '/profile/edit', builder: (_, __) => const EditProfileScreen()),

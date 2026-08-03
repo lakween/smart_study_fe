@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 import '../../../../shared/widgets/profile_cover.dart';
@@ -66,8 +67,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       context.pop();
     } else {
       final error = ref.read(authProvider).error ?? 'Could not update profile';
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: AppColors.error));
+      AppMessage.error(context, error);
     }
   }
 
@@ -128,8 +128,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     setState(() => _uploadingMedia = false);
     if (!ok) {
       final error = ref.read(authProvider).error ?? 'Could not upload photo';
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: AppColors.error));
+      AppMessage.error(context, error);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/models/user_model.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_message.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../providers/topic_provider.dart';
 
@@ -16,7 +17,8 @@ class CreateEditTopicScreen extends ConsumerStatefulWidget {
       : assert(subjectId != null || topicId != null);
 
   @override
-  ConsumerState<CreateEditTopicScreen> createState() => _CreateEditTopicScreenState();
+  ConsumerState<CreateEditTopicScreen> createState() =>
+      _CreateEditTopicScreenState();
 }
 
 class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
@@ -40,14 +42,21 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
         if (topic != null) {
           _nameCtrl.text = topic.name;
           _descCtrl.text = topic.description ?? '';
-          setState(() { _visibility = topic.visibility; _allowCopy = topic.allowCopy; });
+          setState(() {
+            _visibility = topic.visibility;
+            _allowCopy = topic.allowCopy;
+          });
         }
       });
     }
   }
 
   @override
-  void dispose() { _nameCtrl.dispose(); _descCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _nameCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -55,24 +64,30 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
     late final bool saved;
     if (isEditing) {
       final topic = ref.read(topicByIdProvider(widget.topicId!))!;
-      saved = await ref.read(topicProvider.notifier).updateTopic(topic.copyWith(name: _nameCtrl.text.trim(), description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(), visibility: _visibility, allowCopy: _allowCopy));
+      saved = await ref.read(topicProvider.notifier).updateTopic(topic.copyWith(
+          name: _nameCtrl.text.trim(),
+          description:
+              _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+          visibility: _visibility,
+          allowCopy: _allowCopy));
     } else {
       saved = await ref.read(topicProvider.notifier).createTopic(
-        name: _nameCtrl.text.trim(),
-        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-        subjectId: widget.subjectId!,
-        visibility: _visibility, allowCopy: _allowCopy,
-      );
+            name: _nameCtrl.text.trim(),
+            description:
+                _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+            subjectId: widget.subjectId!,
+            visibility: _visibility,
+            allowCopy: _allowCopy,
+          );
     }
     if (!mounted) return;
     setState(() => _saving = false);
     if (saved) {
       context.pop(true);
     } else {
-      final message = ref.read(topicProvider).error ?? 'Could not save the topic. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: AppColors.error),
-      );
+      final message = ref.read(topicProvider).error ??
+          'Could not save the topic. Please try again.';
+      AppMessage.error(context, message);
     }
   }
 
@@ -90,20 +105,32 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppTextField(label: 'Topic Name *', controller: _nameCtrl, prefixIcon: Icons.topic_outlined, validator: Validators.fullName),
+                AppTextField(
+                    label: 'Topic Name *',
+                    controller: _nameCtrl,
+                    prefixIcon: Icons.topic_outlined,
+                    validator: Validators.fullName),
                 const SizedBox(height: 16),
-                AppTextField(label: 'Description (optional)', controller: _descCtrl, maxLines: 3),
+                AppTextField(
+                    label: 'Description (optional)',
+                    controller: _descCtrl,
+                    maxLines: 3),
                 const SizedBox(height: 20),
-                Text('Visibility', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Visibility',
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 10),
                 Row(
                   children: ContentVisibility.values.map((v) {
                     final selected = _visibility == v;
                     Color c;
-                    switch(v) {
-                      case ContentVisibility.private: c = AppColors.privateColor;
-                      case ContentVisibility.friendsOnly: c = AppColors.friendsColor;
-                      case ContentVisibility.public: c = AppColors.publicColor;
+                    switch (v) {
+                      case ContentVisibility.private:
+                        c = AppColors.privateColor;
+                      case ContentVisibility.friendsOnly:
+                        c = AppColors.friendsColor;
+                      case ContentVisibility.public:
+                        c = AppColors.publicColor;
                     }
                     return Expanded(
                       child: GestureDetector(
@@ -114,18 +141,33 @@ class _CreateEditTopicScreenState extends ConsumerState<CreateEditTopicScreen> {
                           decoration: BoxDecoration(
                             color: selected ? c : c.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: c.withValues(alpha: selected ? 1 : 0.3)),
+                            border: Border.all(
+                                color: c.withValues(alpha: selected ? 1 : 0.3)),
                           ),
-                          child: Text(v.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? Colors.white : c), textAlign: TextAlign.center),
+                          child: Text(v.label,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: selected ? Colors.white : c),
+                              textAlign: TextAlign.center),
                         ),
                       ),
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(value: _allowCopy, onChanged: (v) => setState(() => _allowCopy = v), title: const Text('Allow Copy', style: TextStyle(fontWeight: FontWeight.w600)), activeThumbColor: AppColors.primary, contentPadding: EdgeInsets.zero),
+                SwitchListTile(
+                    value: _allowCopy,
+                    onChanged: (v) => setState(() => _allowCopy = v),
+                    title: const Text('Allow Copy',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    activeThumbColor: AppColors.primary,
+                    contentPadding: EdgeInsets.zero),
                 const SizedBox(height: 28),
-                AppButton(label: isEditing ? 'Save Changes' : 'Create Topic', onPressed: _saving ? null : _save, isLoading: _saving),
+                AppButton(
+                    label: isEditing ? 'Save Changes' : 'Create Topic',
+                    onPressed: _saving ? null : _save,
+                    isLoading: _saving),
               ],
             ),
           ),

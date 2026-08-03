@@ -7,6 +7,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/settings/presentation/providers/theme_provider.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
+import 'shared/widgets/app_message.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,10 +38,9 @@ class SmartStudyApp extends ConsumerWidget {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = rootNavigatorKey.currentContext;
           if (context == null) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Your session is no longer valid. Please sign in again.'),
-            ),
+          AppMessage.error(
+            context,
+            'Your session is no longer valid. Please sign in again.',
           );
         });
       }

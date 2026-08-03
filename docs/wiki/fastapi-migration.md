@@ -66,7 +66,7 @@ Implemented in FastAPI:
 - Health, shared errors/security headers, CORS, and configuration.
 - Authentication: register, login, current user, refresh rotation, logout, and
   forgot/reset password.
-- Subjects: listing, detail, create, update, and delete.
+- Subjects: listing, detail, create, update, delete, and visibility-aware deep copy with nested copy rules and immutable creator provenance.
 - Topics: listing, detail, create, update, delete, and copy.
 - Documents: listing, detail, validated upload, authenticated delivery, update,
   delete with final-reference cleanup, and copy.
@@ -88,8 +88,9 @@ Implemented in FastAPI:
 - AI quiz generation: validated transient PDF/JPEG/PNG uploads, PDF text
   extraction, OpenAI/Gemini structured generation, regeneration with duplicate
   avoidance, grounded question validation, and durable/live AI notifications.
-- Exams phase 2: owned/invited lists, detail, draft create/edit/delete, secure
-  topic question publishing, accepted-friend invitations, invitation responses,
+- Exams phase 2: owned/invited lists, detail, draft create/edit/delete, optional
+  classification/scheduling, organizer-owned quiz-library question selection,
+  accepted-friend invitations, invitation responses,
   cancellation, durable notifications, and live `exam:changed` events.
 - Exams phase 3: unique start/resume attempts, server clock/deadlines, scoped
   answer autosave, idempotent scoring/submission, participant completion,
@@ -115,6 +116,9 @@ Implemented in FastAPI:
   notifications, accepted-friend listings, friends-only topic access versus
   non-friends, private copy output with original-creator provenance, and scoped
   notification read/delete behavior.
+  Subject database coverage also verifies deep-copy counts, private destinations,
+  nested visibility/copy filtering, cloned quiz questions, safe document references,
+  and immutable original-creator provenance.
   Dashboard and lifecycle coverage verifies real home/performance aggregation,
   revision reminder persistence and exact-once claiming, and an individual exam's
   publish/start/answer/submit/score/solution-release journey. These tests also fixed

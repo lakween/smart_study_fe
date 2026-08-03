@@ -67,11 +67,9 @@ class _ExamListScreenState extends ConsumerState<ExamListScreen> {
       if (aRank != bRank) return aRank.compareTo(bRank);
       if (a.status == ExamStatus.completed ||
           a.status == ExamStatus.cancelled) {
-        return (b.closesAt ?? b.createdAt)
-            .compareTo(a.closesAt ?? a.createdAt);
+        return (b.closesAt ?? b.createdAt).compareTo(a.closesAt ?? a.createdAt);
       }
-      return (a.startTime ?? a.createdAt)
-          .compareTo(b.startTime ?? b.createdAt);
+      return (a.startTime ?? a.createdAt).compareTo(b.startTime ?? b.createdAt);
     });
     return filtered;
   }
@@ -176,8 +174,8 @@ class _ExamListScreenState extends ConsumerState<ExamListScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text('Invited (${visibleInvited.length})'),
-                                    if (invited.any(
-                                        (exam) => exam.isInvitationPending)) ...[
+                                    if (invited.any((exam) =>
+                                        exam.isInvitationPending)) ...[
                                       const SizedBox(width: 6),
                                       Container(
                                         width: 7,
@@ -356,8 +354,8 @@ class _ExamList extends StatelessWidget {
             final exam = exams[index];
             return _ExamCard(
               exam: exam,
-              owned: ownedExamIds.contains(exam.id) ||
-                  exam.organizerId == userId,
+              owned:
+                  ownedExamIds.contains(exam.id) || exam.organizerId == userId,
             );
           },
         ),
@@ -398,9 +396,8 @@ class _ExamCard extends StatelessWidget {
         .map((participant) => participant.score)
         .whereType<double>()
         .toList();
-    final average = scores.isEmpty
-        ? null
-        : scores.reduce((a, b) => a + b) / scores.length;
+    final average =
+        scores.isEmpty ? null : scores.reduce((a, b) => a + b) / scores.length;
     final passRate = scores.isEmpty
         ? null
         : scores.where((score) => score >= exam.passPercent).length /
@@ -565,9 +562,8 @@ class _OrganizerProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final participantCount = exam.participants.length;
-    final progress = participantCount == 0
-        ? 0.0
-        : exam.submittedCount / participantCount;
+    final progress =
+        participantCount == 0 ? 0.0 : exam.submittedCount / participantCount;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -639,8 +635,7 @@ class _CompletedMetrics extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.insights_rounded,
-              size: 17, color: AppColors.accent),
+          const Icon(Icons.insights_rounded, size: 17, color: AppColors.accent),
           const SizedBox(width: 7),
           Text(
             '${average.toStringAsFixed(0)}% average',
@@ -649,8 +644,7 @@ class _CompletedMetrics extends StatelessWidget {
           const Spacer(),
           Text(
             '${passRate.toStringAsFixed(0)}% passed · $participantCount results',
-            style: const TextStyle(
-                color: AppColors.textMuted, fontSize: 11),
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
           ),
         ],
       ),
@@ -726,7 +720,7 @@ class _LoadError extends StatelessWidget {
             const Icon(Icons.cloud_off_outlined,
                 size: 52, color: AppColors.textMuted),
             const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
+            SelectableText(message, textAlign: TextAlign.center),
             const SizedBox(height: 18),
             ElevatedButton.icon(
               onPressed: onRetry,
