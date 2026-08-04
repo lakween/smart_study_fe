@@ -42,7 +42,7 @@ Authentication: `/splash`, `/login`, `/register`, `/forgot-password`.
 
 Shell tabs: `/home/dashboard`, `/home/subjects`, `/home/exams`, `/home/friends`, `/home/profile`.
 
-Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/detail/question-library/private-contribution/attempt/result; friend requests, friend discovery, and user profile; notifications, settings, and profile edit. My Performance uses `/dashboard` and `/dashboard?section=memory`, but both routes remain inside the authenticated shell so the bottom dock stays visible with Home selected.
+Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/detail/question-library/private-contribution/attempt/result; friend requests, friend discovery, and user profile; notifications, settings, and profile edit. My Performance uses `/dashboard` and `/dashboard?section=memory`, but both routes remain inside the authenticated shell so the bottom dock stays visible with Home selected. Exam detail/result views are also shell-owned with Exams selected; create, question-building, contribution, and attempt routes remain focused full-screen flows without the dock.
 
 Keep route parameter names aligned with screen constructor requirements. Add specific static routes before overlapping parameterized routes when route matching could be ambiguous.
 
@@ -59,7 +59,7 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 - `darkModeProvider` persists the user's choice and is overridden at startup with the saved value.
 - Screens render loading, error, empty, and content states and offer retry or pull-to-refresh when appropriate.
 - Forms own `TextEditingController`, selection, and validation state locally, then delegate mutations to a notifier.
-- `ExamQuestionLibraryPicker` is shared by individual exam paper selection and friend-question imports. It separates selected quiz groups from the available library while retaining search, subject/topic/quiz filters, whole-quiz actions, per-question actions, and an optional maximum selection.
+- `ExamQuestionLibraryPicker` is shared by individual exam paper selection and the primary friend-contribution screen. It separates selected quiz groups from the available library while retaining search, collapsible subject/topic/quiz filters, whole-quiz actions, per-question actions, and an optional maximum selection. Friend quiz selections submit directly at the exact quota; existing private questions appear as one selected group. `Write new` opens the secondary collapsible manual editor and can prefill a partial quiz selection.
 - Shared widgets include app buttons, cards, text fields, bottom navigation, avatars, confirmation dialogs, empty/error states, shimmer loaders, cards/tiles, badges, score circles, stats, section headers, and `AppMessage`. Action failures use long-lived selectable `AppMessage.error` snackbars with close/swipe dismissal; persistent `ErrorState` details are selectable too.
 
 ## Design language

@@ -47,6 +47,8 @@ Drill-down routes:
 
 `/dashboard` and its memory deep link are children of the authenticated shell, even though they are not separate dock destinations. The performance view keeps the floating bottom dock visible and resolves to the Home item.
 
+Exam detail and result routes are also children of the shell and resolve to the Exams dock item. Exam creation, individual question building, friend contribution, and active attempts stay outside the shell to preserve a focused workflow.
+
 There is no global GoRouter redirect. Splash performs the token check and navigates to login or the dashboard.
 
 ## State flow

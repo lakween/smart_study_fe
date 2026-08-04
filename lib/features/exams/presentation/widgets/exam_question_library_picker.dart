@@ -29,6 +29,7 @@ class _ExamQuestionLibraryPickerState extends State<ExamQuestionLibraryPicker> {
   String? _subject;
   String? _topic;
   String? _quiz;
+  bool _filtersExpanded = false;
 
   @override
   void dispose() {
@@ -147,99 +148,121 @@ class _ExamQuestionLibraryPickerState extends State<ExamQuestionLibraryPicker> {
         _quiz != null;
     final maxSelection = widget.maxSelection;
 
-    return Column(
-      children: [
-        Padding(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final controls = Padding(
           padding: widget.padding.copyWith(bottom: 10),
           child: Column(
             children: [
-              TextField(
-                controller: _searchController,
-                onChanged: (value) => setState(() => _search = value),
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: 'Search questions or quiz names',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _search.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Clear search',
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _search = '');
-                          },
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final halfWidth = (constraints.maxWidth - 8) / 2;
-                  return Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      SizedBox(
-                        width: halfWidth,
-                        child: _FilterDropdown(
-                          label: 'Subject',
-                          value: _subject,
-                          values: _values('subjectName'),
-                          onChanged: (value) => setState(() {
-                            _subject = value;
-                            _topic = null;
-                            _quiz = null;
-                          }),
-                        ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) => setState(() => _search = value),
+                      textInputAction: TextInputAction.search,
+                      decoration: InputDecoration(
+                        hintText: 'Search questions or quiz names',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: _search.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _search = '');
+                                },
+                                icon: const Icon(Icons.close_rounded),
+                              ),
                       ),
-                      SizedBox(
-                        width: halfWidth,
-                        child: _FilterDropdown(
-                          label: 'Topic',
-                          value: _topic,
-                          values: _values(
-                            'topicName',
-                            (row) =>
-                                _subject == null ||
-                                _value(row, 'subjectName') == _subject,
-                          ),
-                          onChanged: (value) => setState(() {
-                            _topic = value;
-                            _quiz = null;
-                          }),
-                        ),
-                      ),
-                      SizedBox(
-                        width: constraints.maxWidth,
-                        child: _FilterDropdown(
-                          label: 'Quiz',
-                          value: _quiz,
-                          values: _values(
-                            'quizTitle',
-                            (row) =>
-                                (_subject == null ||
-                                    _value(row, 'subjectName') == _subject) &&
-                                (_topic == null ||
-                                    _value(row, 'topicName') == _topic),
-                          ),
-                          onChanged: (value) => setState(() => _quiz = value),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              if (filtersActive) ...[
-                const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: _clearFilters,
-                    icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
-                    label: const Text('Clear filters'),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  Badge(
+                    isLabelVisible: filtersActive,
+                    child: IconButton.filledTonal(
+                      tooltip:
+                          _filtersExpanded ? 'Hide filters' : 'Show filters',
+                      onPressed: () => setState(
+                        () => _filtersExpanded = !_filtersExpanded,
+                      ),
+                      icon: Icon(
+                        _filtersExpanded
+                            ? Icons.filter_alt_off_rounded
+                            : Icons.tune_rounded,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (_filtersExpanded) ...[
+                const SizedBox(height: 10),
+                LayoutBuilder(
+                  builder: (context, filterConstraints) {
+                    final halfWidth = (filterConstraints.maxWidth - 8) / 2;
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        SizedBox(
+                          width: halfWidth,
+                          child: _FilterDropdown(
+                            label: 'Subject',
+                            value: _subject,
+                            values: _values('subjectName'),
+                            onChanged: (value) => setState(() {
+                              _subject = value;
+                              _topic = null;
+                              _quiz = null;
+                            }),
+                          ),
+                        ),
+                        SizedBox(
+                          width: halfWidth,
+                          child: _FilterDropdown(
+                            label: 'Topic',
+                            value: _topic,
+                            values: _values(
+                              'topicName',
+                              (row) =>
+                                  _subject == null ||
+                                  _value(row, 'subjectName') == _subject,
+                            ),
+                            onChanged: (value) => setState(() {
+                              _topic = value;
+                              _quiz = null;
+                            }),
+                          ),
+                        ),
+                        SizedBox(
+                          width: filterConstraints.maxWidth,
+                          child: _FilterDropdown(
+                            label: 'Quiz',
+                            value: _quiz,
+                            values: _values(
+                              'quizTitle',
+                              (row) =>
+                                  (_subject == null ||
+                                      _value(row, 'subjectName') == _subject) &&
+                                  (_topic == null ||
+                                      _value(row, 'topicName') == _topic),
+                            ),
+                            onChanged: (value) => setState(() => _quiz = value),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
+                if (filtersActive)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _clearFilters,
+                      icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+                      label: const Text('Clear filters'),
+                    ),
+                  ),
               ],
               if (maxSelection != null)
                 _SelectionCapacity(
@@ -248,77 +271,95 @@ class _ExamQuestionLibraryPickerState extends State<ExamQuestionLibraryPicker> {
                 ),
             ],
           ),
-        ),
-        Expanded(
-          child: ListView(
-            padding: widget.padding.copyWith(top: 0),
-            children: [
-              _SectionHeader(
-                icon: Icons.check_circle_rounded,
-                color: AppColors.success,
-                title: 'Selected quizzes',
-                subtitle: selectedRows.isEmpty
-                    ? 'Questions you add will appear here'
-                    : '${selectedGroups.length} ${selectedGroups.length == 1 ? 'quiz' : 'quizzes'} • '
-                        '${selectedRows.length} ${selectedRows.length == 1 ? 'question' : 'questions'}',
-                actionLabel: selectedRows.isEmpty ? null : 'Clear all',
-                onAction:
-                    selectedRows.isEmpty ? null : () => _remove(selectedRows),
-              ),
-              const SizedBox(height: 10),
-              if (selectedRows.isEmpty)
-                const _EmptySelection()
-              else
-                ...selectedGroups.values.map(
-                  (rows) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _QuizGroupCard(
-                      rows: rows,
-                      totalQuestions: widget.questions
-                          .where(
-                              (row) => _groupKey(row) == _groupKey(rows.first))
-                          .length,
-                      selected: true,
-                      onGroupAction: () => _remove(rows),
-                      onQuestionAction: (row) => _remove([row]),
-                    ),
-                  ),
+        );
+        final compact = constraints.maxHeight < 440;
+        final controlsWidget = compact
+            ? ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: (constraints.maxHeight * .62)
+                      .clamp(120.0, 190.0)
+                      .toDouble(),
                 ),
-              const SizedBox(height: 18),
-              _SectionHeader(
-                icon: Icons.auto_stories_rounded,
-                color: AppColors.primary,
-                title: 'Available quiz library',
-                subtitle: filtersActive
-                    ? '${availableRows.length} matching ${availableRows.length == 1 ? 'question' : 'questions'}'
-                    : '${availableRows.length} ${availableRows.length == 1 ? 'question' : 'questions'} ready to add',
-              ),
-              const SizedBox(height: 10),
-              if (availableRows.isEmpty)
-                _AvailableEmpty(
-                  hasQuestions: widget.questions.isNotEmpty,
-                  filtersActive: filtersActive,
-                  selectionFull: maxSelection != null && _remaining == 0,
-                  onClearFilters: filtersActive ? _clearFilters : null,
-                )
-              else
-                ...availableGroups.values.map(
-                  (rows) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _QuizGroupCard(
-                      rows: rows,
-                      totalQuestions: rows.length,
-                      selected: false,
-                      canAdd: _remaining > 0,
-                      onGroupAction: () => _add(rows),
-                      onQuestionAction: (row) => _add([row]),
-                    ),
+                child: SingleChildScrollView(child: controls),
+              )
+            : controls;
+
+        return Column(
+          children: [
+            controlsWidget,
+            Expanded(
+              child: ListView(
+                padding: widget.padding.copyWith(top: 0),
+                children: [
+                  _SectionHeader(
+                    icon: Icons.check_circle_rounded,
+                    color: AppColors.success,
+                    title: 'Selected quizzes',
+                    subtitle: selectedRows.isEmpty
+                        ? 'Questions you add will appear here'
+                        : '${selectedGroups.length} ${selectedGroups.length == 1 ? 'quiz' : 'quizzes'} • '
+                            '${selectedRows.length} ${selectedRows.length == 1 ? 'question' : 'questions'}',
+                    actionLabel: selectedRows.isEmpty ? null : 'Clear all',
+                    onAction: selectedRows.isEmpty
+                        ? null
+                        : () => _remove(selectedRows),
                   ),
-                ),
-            ],
-          ),
-        ),
-      ],
+                  const SizedBox(height: 10),
+                  if (selectedRows.isEmpty)
+                    const _EmptySelection()
+                  else
+                    ...selectedGroups.values.map(
+                      (rows) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _QuizGroupCard(
+                          rows: rows,
+                          totalQuestions: widget.questions
+                              .where((row) =>
+                                  _groupKey(row) == _groupKey(rows.first))
+                              .length,
+                          selected: true,
+                          onGroupAction: () => _remove(rows),
+                          onQuestionAction: (row) => _remove([row]),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 18),
+                  _SectionHeader(
+                    icon: Icons.auto_stories_rounded,
+                    color: AppColors.primary,
+                    title: 'Available quiz library',
+                    subtitle: filtersActive
+                        ? '${availableRows.length} matching ${availableRows.length == 1 ? 'question' : 'questions'}'
+                        : '${availableRows.length} ${availableRows.length == 1 ? 'question' : 'questions'} ready to add',
+                  ),
+                  const SizedBox(height: 10),
+                  if (availableRows.isEmpty)
+                    _AvailableEmpty(
+                      hasQuestions: widget.questions.isNotEmpty,
+                      filtersActive: filtersActive,
+                      selectionFull: maxSelection != null && _remaining == 0,
+                      onClearFilters: filtersActive ? _clearFilters : null,
+                    )
+                  else
+                    ...availableGroups.values.map(
+                      (rows) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _QuizGroupCard(
+                          rows: rows,
+                          totalQuestions: rows.length,
+                          selected: false,
+                          canAdd: _remaining > 0,
+                          onGroupAction: () => _add(rows),
+                          onQuestionAction: (row) => _add([row]),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

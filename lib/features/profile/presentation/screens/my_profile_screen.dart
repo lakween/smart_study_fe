@@ -158,15 +158,11 @@ class MyProfileScreen extends ConsumerWidget {
                       message: 'Create your first subject',
                       actionLabel: 'Create',
                       onAction: () => context.push('/subjects/create'))
-                  : GridView.builder(
+                  : ListView.separated(
                       padding: AppSpacing.list,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.82),
                       itemCount: mySubjects.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 12),
                       itemBuilder: (_, i) => SubjectCard(
                           subject: mySubjects[i],
                           onTap: () =>

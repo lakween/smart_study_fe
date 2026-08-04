@@ -45,11 +45,11 @@ class AppBottomNav extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      minimum: const EdgeInsets.fromLTRB(8, 0, 8, 6),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkElevatedSurface : Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(23),
           border: Border.all(
             color: isDark ? AppColors.darkDivider : AppColors.divider,
           ),
@@ -57,8 +57,8 @@ class AppBottomNav extends StatelessWidget {
             BoxShadow(
               color: (isDark ? Colors.black : const Color(0xFF26345D))
                   .withValues(alpha: isDark ? 0.34 : 0.14),
-              blurRadius: 30,
-              offset: const Offset(0, 12),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
             ),
             if (!isDark)
               BoxShadow(
@@ -69,19 +69,21 @@ class AppBottomNav extends StatelessWidget {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(4),
           child: Row(
-            children: List.generate(_items.length, (index) {
-              final item = _items[index];
-              return Expanded(
-                child: _NavButton(
-                  item: item,
-                  selected: currentIndex == index,
-                  isDark: isDark,
-                  onTap: () => onTap(index),
+            children: [
+              for (int index = 0; index < _items.length; index++) ...[
+                if (index > 0) const SizedBox(width: 3),
+                Expanded(
+                  child: _NavButton(
+                    item: _items[index],
+                    selected: currentIndex == index,
+                    isDark: isDark,
+                    onTap: () => onTap(index),
+                  ),
                 ),
-              );
-            }),
+              ],
+            ],
           ),
         ),
       ),
@@ -117,75 +119,69 @@ class _NavButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(21),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 240),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
-            decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.primary.withValues(alpha: isDark ? 0.18 : 0.08)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(21),
-              border: Border.all(
-                color: selected
-                    ? AppColors.primary.withValues(alpha: isDark ? 0.22 : 0.10)
-                    : Colors.transparent,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 240),
-                  curve: Curves.easeOutCubic,
-                  width: selected ? 38 : 34,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    gradient: selected ? AppColors.premiumGradient : null,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.28),
-                              blurRadius: 12,
-                              offset: const Offset(0, 5),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    child: Icon(
-                      selected ? item.selectedIcon : item.icon,
-                      key: ValueKey(selected),
-                      size: selected ? 20 : 22,
-                      color: selected ? Colors.white : inactiveColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOut,
-                  style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                        color: selected
-                            ? (isDark
-                                ? AppColors.primaryLight
-                                : AppColors.primaryDark)
-                            : inactiveColor,
-                        fontSize: 10.5,
-                        fontWeight:
-                            selected ? FontWeight.w800 : FontWeight.w600,
+          borderRadius: BorderRadius.circular(18),
+          child: Center(
+            heightFactor: 1,
+            child: SizedBox(
+              width: 56,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 240),
+                      curve: Curves.easeOutCubic,
+                      width: selected ? 34 : 30,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        gradient: selected ? AppColors.premiumGradient : null,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: selected
+                            ? [
+                                BoxShadow(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.28),
+                                  blurRadius: 9,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
                       ),
-                  child: Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                    softWrap: false,
-                  ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        child: Icon(
+                          selected ? item.selectedIcon : item.icon,
+                          key: ValueKey(selected),
+                          size: selected ? 19 : 20,
+                          color: selected ? Colors.white : inactiveColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                            color: selected
+                                ? (isDark
+                                    ? AppColors.primaryLight
+                                    : AppColors.primaryDark)
+                                : inactiveColor,
+                            fontSize: 9.5,
+                            fontWeight:
+                                selected ? FontWeight.w800 : FontWeight.w600,
+                          ),
+                      child: Text(
+                        item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.fade,
+                        softWrap: false,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

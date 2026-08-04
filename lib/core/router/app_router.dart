@@ -49,6 +49,71 @@ final appRouter = GoRouter(
         path: '/forgot-password',
         builder: (_, __) => const ForgotPasswordScreen()),
 
+    // Focused create, edit, upload, contribution, and attempt workflows.
+    // Keep static paths before shell-owned parameter routes such as
+    // /subjects/:subjectId and /exams/:examId.
+    GoRoute(
+        path: '/subjects/create',
+        builder: (_, __) => const CreateEditSubjectScreen()),
+    GoRoute(
+      path: '/subjects/:subjectId/edit',
+      builder: (_, state) =>
+          CreateEditSubjectScreen(subjectId: state.pathParameters['subjectId']),
+    ),
+    GoRoute(
+      path: '/subjects/:subjectId/topics/create',
+      builder: (_, state) =>
+          CreateEditTopicScreen(subjectId: state.pathParameters['subjectId']!),
+    ),
+    GoRoute(
+      path: '/topics/:topicId/edit',
+      builder: (_, state) =>
+          CreateEditTopicScreen(topicId: state.pathParameters['topicId']),
+    ),
+    GoRoute(
+        path: '/documents/upload',
+        builder: (_, __) => const DocumentUploadScreen()),
+    GoRoute(
+      path: '/quizzes/create',
+      builder: (_, state) {
+        final contextIds = state.extra as Map<String, String>?;
+        return CreateQuizScreen(
+          subjectId: contextIds?['subjectId'],
+          topicId: contextIds?['topicId'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/quizzes/:quizId/edit',
+      builder: (_, state) =>
+          CreateQuizScreen(quizId: state.pathParameters['quizId']!),
+    ),
+    GoRoute(
+      path: '/quizzes/:quizId/attempt',
+      builder: (_, state) =>
+          QuizAttemptScreen(quizId: state.pathParameters['quizId']!),
+    ),
+    GoRoute(path: '/ai-quiz', builder: (_, __) => const AiQuizScreen()),
+    GoRoute(
+        path: '/exams/create', builder: (_, __) => const CreateExamScreen()),
+    GoRoute(
+      path: '/exams/:examId/contribute',
+      builder: (_, state) =>
+          ExamContributionScreen(examId: state.pathParameters['examId']!),
+    ),
+    GoRoute(
+      path: '/exams/:examId/questions',
+      builder: (_, state) => IndividualExamQuestionsScreen(
+          examId: state.pathParameters['examId']!),
+    ),
+    GoRoute(
+      path: '/exams/:examId/attempt',
+      builder: (_, state) =>
+          ExamAttemptScreen(examId: state.pathParameters['examId']!),
+    ),
+    GoRoute(
+        path: '/profile/edit', builder: (_, __) => const EditProfileScreen()),
+
     // Shell (bottom nav)
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
@@ -73,131 +138,55 @@ final appRouter = GoRouter(
             initialSection: state.uri.queryParameters['section'],
           ),
         ),
+        GoRoute(
+          path: '/subjects/:subjectId',
+          builder: (_, state) => SubjectDetailScreen(
+              subjectId: state.pathParameters['subjectId']!),
+        ),
+        GoRoute(
+          path: '/subjects/:subjectId/topics/:topicId',
+          builder: (_, state) => TopicDetailScreen(
+              subjectId: state.pathParameters['subjectId']!,
+              topicId: state.pathParameters['topicId']!),
+        ),
+        GoRoute(
+          path: '/documents/:documentId/view',
+          builder: (_, state) => DocumentViewerScreen(
+              documentId: state.pathParameters['documentId']!),
+        ),
+        GoRoute(path: '/quizzes', builder: (_, __) => const QuizListScreen()),
+        GoRoute(
+          path: '/quizzes/:quizId/result/:attemptId',
+          builder: (_, state) => QuizResultScreen(
+              quizId: state.pathParameters['quizId']!,
+              attemptId: state.pathParameters['attemptId']!),
+        ),
+        GoRoute(
+          path: '/exams/:examId/result',
+          builder: (_, state) =>
+              ExamResultScreen(examId: state.pathParameters['examId']!),
+        ),
+        GoRoute(
+          path: '/exams/:examId',
+          builder: (_, state) =>
+              ExamDetailScreen(examId: state.pathParameters['examId']!),
+        ),
+        GoRoute(
+            path: '/friends/requests',
+            builder: (_, __) => const FriendRequestsScreen()),
+        GoRoute(
+            path: '/friends/find',
+            builder: (_, __) => const FindFriendsScreen()),
+        GoRoute(
+          path: '/users/:userId/profile',
+          builder: (_, state) =>
+              UserProfileScreen(userId: state.pathParameters['userId']!),
+        ),
+        GoRoute(
+            path: '/notifications',
+            builder: (_, __) => const NotificationsScreen()),
+        GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       ],
     ),
-
-    // Subjects
-    GoRoute(
-        path: '/subjects/create',
-        builder: (_, __) => const CreateEditSubjectScreen()),
-    GoRoute(
-      path: '/subjects/:subjectId',
-      builder: (_, state) =>
-          SubjectDetailScreen(subjectId: state.pathParameters['subjectId']!),
-    ),
-    GoRoute(
-      path: '/subjects/:subjectId/edit',
-      builder: (_, state) =>
-          CreateEditSubjectScreen(subjectId: state.pathParameters['subjectId']),
-    ),
-    GoRoute(
-      path: '/subjects/:subjectId/topics/create',
-      builder: (_, state) =>
-          CreateEditTopicScreen(subjectId: state.pathParameters['subjectId']!),
-    ),
-    GoRoute(
-      path: '/subjects/:subjectId/topics/:topicId',
-      builder: (_, state) => TopicDetailScreen(
-          subjectId: state.pathParameters['subjectId']!,
-          topicId: state.pathParameters['topicId']!),
-    ),
-
-    // Topics
-    GoRoute(
-      path: '/topics/:topicId/edit',
-      builder: (_, state) =>
-          CreateEditTopicScreen(topicId: state.pathParameters['topicId']),
-    ),
-
-    // Documents
-    GoRoute(
-        path: '/documents/upload',
-        builder: (_, __) => const DocumentUploadScreen()),
-    GoRoute(
-      path: '/documents/:documentId/view',
-      builder: (_, state) =>
-          DocumentViewerScreen(documentId: state.pathParameters['documentId']!),
-    ),
-
-    // Quizzes
-    GoRoute(path: '/quizzes', builder: (_, __) => const QuizListScreen()),
-    GoRoute(
-      path: '/quizzes/create',
-      builder: (_, state) {
-        final contextIds = state.extra as Map<String, String>?;
-        return CreateQuizScreen(
-          subjectId: contextIds?['subjectId'],
-          topicId: contextIds?['topicId'],
-        );
-      },
-    ),
-    GoRoute(
-      path: '/quizzes/:quizId/edit',
-      builder: (_, state) =>
-          CreateQuizScreen(quizId: state.pathParameters['quizId']!),
-    ),
-    GoRoute(
-      path: '/quizzes/:quizId/attempt',
-      builder: (_, state) =>
-          QuizAttemptScreen(quizId: state.pathParameters['quizId']!),
-    ),
-    GoRoute(
-      path: '/quizzes/:quizId/result/:attemptId',
-      builder: (_, state) => QuizResultScreen(
-          quizId: state.pathParameters['quizId']!,
-          attemptId: state.pathParameters['attemptId']!),
-    ),
-
-    // AI Quiz
-    GoRoute(path: '/ai-quiz', builder: (_, __) => const AiQuizScreen()),
-
-    // Exams
-    GoRoute(
-        path: '/exams/create', builder: (_, __) => const CreateExamScreen()),
-    GoRoute(
-      path: '/exams/:examId/contribute',
-      builder: (_, state) =>
-          ExamContributionScreen(examId: state.pathParameters['examId']!),
-    ),
-    GoRoute(
-      path: '/exams/:examId/questions',
-      builder: (_, state) => IndividualExamQuestionsScreen(
-          examId: state.pathParameters['examId']!),
-    ),
-    GoRoute(
-      path: '/exams/:examId',
-      builder: (_, state) =>
-          ExamDetailScreen(examId: state.pathParameters['examId']!),
-    ),
-    GoRoute(
-      path: '/exams/:examId/attempt',
-      builder: (_, state) =>
-          ExamAttemptScreen(examId: state.pathParameters['examId']!),
-    ),
-    GoRoute(
-      path: '/exams/:examId/result',
-      builder: (_, state) =>
-          ExamResultScreen(examId: state.pathParameters['examId']!),
-    ),
-
-    // Friends
-    GoRoute(
-        path: '/friends/requests',
-        builder: (_, __) => const FriendRequestsScreen()),
-    GoRoute(
-        path: '/friends/find', builder: (_, __) => const FindFriendsScreen()),
-    GoRoute(
-      path: '/users/:userId/profile',
-      builder: (_, state) =>
-          UserProfileScreen(userId: state.pathParameters['userId']!),
-    ),
-
-    // Notifications, Dashboard, Settings, Profile
-    GoRoute(
-        path: '/notifications',
-        builder: (_, __) => const NotificationsScreen()),
-    GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
-    GoRoute(
-        path: '/profile/edit', builder: (_, __) => const EditProfileScreen()),
   ],
 );

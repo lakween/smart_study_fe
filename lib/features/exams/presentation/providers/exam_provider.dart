@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
@@ -74,10 +75,12 @@ class ExamState {
 }
 
 class ExamNotifier extends StateNotifier<ExamState> {
-  final _dio = ApiClient().dio;
+  final Dio _dio;
 
-  ExamNotifier() : super(const ExamState()) {
-    load();
+  ExamNotifier({bool autoLoad = true, Dio? dio})
+      : _dio = dio ?? ApiClient().dio,
+        super(const ExamState()) {
+    if (autoLoad) load();
   }
 
   void clearError() => state = state.copyWith(error: null);

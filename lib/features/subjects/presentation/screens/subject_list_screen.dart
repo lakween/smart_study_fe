@@ -43,11 +43,11 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
 
   void _reload() {
     ref.read(subjectProvider.notifier).load(
-      search: _searchController.text,
-      visibility: _filter,
-      archived: _showArchived,
-      sort: _sort,
-    );
+          search: _searchController.text,
+          visibility: _filter,
+          archived: _showArchived,
+          sort: _sort,
+        );
   }
 
   void _setFilter(ContentVisibility? filter) {
@@ -119,15 +119,55 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
             padding: AppSpacing.filters,
             child: Row(
               children: [
-                _FilterChip(label: 'All', isSelected: _filter == null && !_showArchived, onTap: () { _showArchived = false; _setFilter(null); }),
+                _FilterChip(
+                    label: 'All',
+                    isSelected: _filter == null && !_showArchived,
+                    onTap: () {
+                      _showArchived = false;
+                      _setFilter(null);
+                    }),
                 const SizedBox(width: 8),
-                _FilterChip(label: 'Public', isSelected: _filter == ContentVisibility.public && !_showArchived, onTap: () { _showArchived = false; _setFilter(ContentVisibility.public); }, color: AppColors.publicColor),
+                _FilterChip(
+                    label: 'Public',
+                    isSelected:
+                        _filter == ContentVisibility.public && !_showArchived,
+                    onTap: () {
+                      _showArchived = false;
+                      _setFilter(ContentVisibility.public);
+                    },
+                    color: AppColors.publicColor),
                 const SizedBox(width: 8),
-                _FilterChip(label: 'Friends Only', isSelected: _filter == ContentVisibility.friendsOnly && !_showArchived, onTap: () { _showArchived = false; _setFilter(ContentVisibility.friendsOnly); }, color: AppColors.friendsColor),
+                _FilterChip(
+                    label: 'Friends Only',
+                    isSelected: _filter == ContentVisibility.friendsOnly &&
+                        !_showArchived,
+                    onTap: () {
+                      _showArchived = false;
+                      _setFilter(ContentVisibility.friendsOnly);
+                    },
+                    color: AppColors.friendsColor),
                 const SizedBox(width: 8),
-                _FilterChip(label: 'Private', isSelected: _filter == ContentVisibility.private && !_showArchived, onTap: () { _showArchived = false; _setFilter(ContentVisibility.private); }, color: AppColors.privateColor),
+                _FilterChip(
+                    label: 'Private',
+                    isSelected:
+                        _filter == ContentVisibility.private && !_showArchived,
+                    onTap: () {
+                      _showArchived = false;
+                      _setFilter(ContentVisibility.private);
+                    },
+                    color: AppColors.privateColor),
                 const SizedBox(width: 8),
-                _FilterChip(label: 'Archived', isSelected: _showArchived, onTap: () { setState(() { _showArchived = true; _filter = null; }); _reload(); }, color: AppColors.textMuted),
+                _FilterChip(
+                    label: 'Archived',
+                    isSelected: _showArchived,
+                    onTap: () {
+                      setState(() {
+                        _showArchived = true;
+                        _filter = null;
+                      });
+                      _reload();
+                    },
+                    color: AppColors.textMuted),
               ],
             ),
           ),
@@ -138,50 +178,79 @@ class _SubjectListScreenState extends ConsumerState<SubjectListScreen> {
                     ? ErrorState(message: state.error!, onRetry: _reload)
                     : subjects.isEmpty
                         ? EmptyState(
-                        icon: Icons.book_outlined,
-                        title: 'No subjects yet',
-                        message: 'Create your first subject to start organizing your studies!',
-                        actionLabel: 'Create Subject',
-                        onAction: () => _openSubjectEditor('/subjects/create'),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () async => _reload(),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) => GridView.builder(
-                            padding: AppSpacing.listWithFab,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: constraints.maxWidth >= 720 ? 2 : 1,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                              mainAxisExtent: 278,
-                            ),
-                            itemCount: subjects.length,
-                            itemBuilder: (_, i) {
-                              final s = subjects[i];
-                              return SubjectCard(
-                                subject: s,
-                                isOwn: true,
-                                onTap: () => context.push('/subjects/${s.id}'),
-                                onEdit: () => _openSubjectEditor('/subjects/${s.id}/edit'),
-                                onArchive: () async {
-                                  await ref.read(subjectProvider.notifier).setArchived(s, !s.isArchived);
-                                  _reload();
-                                },
-                                onDelete: () async {
-                                  final ok = await ConfirmDialog.show(
-                                    context,
-                                    title: 'Delete Subject',
-                                    message: 'Are you sure you want to delete "${s.name}"? This cannot be undone.',
-                                    confirmLabel: 'Delete',
-                                    isDestructive: true,
+                            icon: Icons.book_outlined,
+                            title: 'No subjects yet',
+                            message:
+                                'Create your first subject to start organizing your studies!',
+                            actionLabel: 'Create Subject',
+                            onAction: () =>
+                                _openSubjectEditor('/subjects/create'),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () async => _reload(),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                Widget buildCard(BuildContext _, int i) {
+                                  final s = subjects[i];
+                                  return SubjectCard(
+                                    subject: s,
+                                    isOwn: true,
+                                    onTap: () =>
+                                        context.push('/subjects/${s.id}'),
+                                    onEdit: () => _openSubjectEditor(
+                                        '/subjects/${s.id}/edit'),
+                                    onArchive: () async {
+                                      await ref
+                                          .read(subjectProvider.notifier)
+                                          .setArchived(s, !s.isArchived);
+                                      _reload();
+                                    },
+                                    onDelete: () async {
+                                      final ok = await ConfirmDialog.show(
+                                        context,
+                                        title: 'Delete Subject',
+                                        message:
+                                            'Are you sure you want to delete "${s.name}"? This cannot be undone.',
+                                        confirmLabel: 'Delete',
+                                        isDestructive: true,
+                                      );
+                                      if (ok == true) {
+                                        ref
+                                            .read(subjectProvider.notifier)
+                                            .deleteSubject(s.id);
+                                      }
+                                    },
                                   );
-                                  if (ok == true) ref.read(subjectProvider.notifier).deleteSubject(s.id);
-                                },
-                              );
-                            },
+                                }
+
+                                if (constraints.maxWidth < 720) {
+                                  return ListView.separated(
+                                    padding: AppSpacing.listWithFab,
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    itemCount: subjects.length,
+                                    itemBuilder: buildCard,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                  );
+                                }
+                                return GridView.builder(
+                                  padding: AppSpacing.listWithFab,
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 14,
+                                    mainAxisSpacing: 14,
+                                    mainAxisExtent: 278,
+                                  ),
+                                  itemCount: subjects.length,
+                                  itemBuilder: buildCard,
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      ),
           ),
         ],
       ),
@@ -199,7 +268,11 @@ class _FilterChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final Color? color;
-  const _FilterChip({required this.label, required this.isSelected, required this.onTap, this.color});
+  const _FilterChip(
+      {required this.label,
+      required this.isSelected,
+      required this.onTap,
+      this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +289,8 @@ class _FilterChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13, fontWeight: FontWeight.w600,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : c,
           ),
         ),

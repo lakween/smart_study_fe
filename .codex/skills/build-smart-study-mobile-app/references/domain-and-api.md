@@ -96,7 +96,7 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 - Attempt startup offers timed mode only when a limit exists and always offers untimed mode. Timed mode auto-submits at zero; both modes record elapsed time.
 - Subject/topic/quiz text schemas remove NUL characters before validation to prevent PostgreSQL UTF-8 `0x00` errors.
 - Individual exam creation may omit subject, topic, and start time. The organizer then builds the draft paper through `GET /exams/:id/question-bank` and `PUT /exams/:id/question-bank` using questions from any owned quiz.
-- `ExamQuestionLibraryPicker` groups the catalog by quiz, keeps selected and available groups separate, supports search and subject/topic/quiz filters, and allows whole-quiz or individual-question add/remove. The same picker imports a participant's own quiz questions into friend contributions while enforcing the contribution quota.
+- `ExamQuestionLibraryPicker` groups the catalog by quiz, keeps selected and available groups separate, supports search and collapsible subject/topic/quiz filters, and allows whole-quiz or individual-question add/remove. Friend contributions use the picker as the main screen and submit directly when the exact quota is selected. Existing submissions are injected as a selected `Current private questions` group. `Write new` opens the optional manual editor, prefills selected questions, and leaves remaining quota slots blank for new questions.
 
 ## Exam lifecycle and security
 

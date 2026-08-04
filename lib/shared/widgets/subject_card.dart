@@ -50,7 +50,8 @@ class SubjectCard extends StatelessWidget {
 
     return Semantics(
       button: onTap != null,
-      label: '${subject.name}, ${subject.topicCount} topics, ${subject.quizCount} quizzes',
+      label:
+          '${subject.name}, ${subject.topicCount} topics, ${subject.quizCount} quizzes',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -61,7 +62,9 @@ class SubjectCard extends StatelessWidget {
               color: isDark ? AppColors.darkCardBg : AppColors.cardBg,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: isDark ? AppColors.darkDivider : accent.withValues(alpha: 0.16),
+                color: isDark
+                    ? AppColors.darkDivider
+                    : accent.withValues(alpha: 0.16),
               ),
               boxShadow: isDark ? const [] : AppColors.cardShadow,
             ),
@@ -69,15 +72,17 @@ class SubjectCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
                         accent.withValues(alpha: isDark ? 0.24 : 0.15),
-                        AppColors.violet.withValues(alpha: isDark ? 0.12 : 0.05),
+                        AppColors.violet
+                            .withValues(alpha: isDark ? 0.12 : 0.05),
                       ],
                     ),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(21)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(21)),
                   ),
                   child: Row(
                     children: [
@@ -97,7 +102,9 @@ class SubjectCard extends StatelessWidget {
                           ],
                         ),
                         child: Text(
-                          subject.name.isEmpty ? '?' : subject.name[0].toUpperCase(),
+                          subject.name.isEmpty
+                              ? '?'
+                              : subject.name[0].toUpperCase(),
                           style: theme.textTheme.titleLarge?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
@@ -113,22 +120,30 @@ class SubjectCard extends StatelessWidget {
                               subject.name,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w800),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               'Updated ${AppHelpers.timeAgo(subject.updatedAt.toLocal())}',
-                              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                              style: theme.textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.textMuted),
                             ),
                           ],
                         ),
                       ),
-                      if (isOwn) _SubjectMenu(subject: subject, onEdit: onEdit, onDelete: onDelete, onChangeVisibility: onChangeVisibility, onArchive: onArchive),
+                      if (isOwn)
+                        _SubjectMenu(
+                            subject: subject,
+                            onEdit: onEdit,
+                            onDelete: onDelete,
+                            onChangeVisibility: onChangeVisibility,
+                            onArchive: onArchive),
                     ],
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 13, 16, 15),
+                  padding: const EdgeInsets.fromLTRB(16, 11, 16, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -139,31 +154,52 @@ class SubjectCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: description == null || description.isEmpty ? AppColors.textMuted : theme.colorScheme.onSurfaceVariant,
+                          color: description == null || description.isEmpty
+                              ? AppColors.textMuted
+                              : theme.colorScheme.onSurfaceVariant,
                           height: 1.35,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 9),
                       Row(
                         children: [
-                          Expanded(child: _Metric(icon: Icons.topic_outlined, value: '${subject.topicCount}', label: 'Topics', color: AppColors.primary)),
+                          Expanded(
+                              child: _Metric(
+                                  icon: Icons.topic_outlined,
+                                  value: '${subject.topicCount}',
+                                  label: 'Topics',
+                                  color: AppColors.primary)),
                           const SizedBox(width: 8),
-                          Expanded(child: _Metric(icon: Icons.quiz_outlined, value: '${subject.quizCount}', label: 'Quizzes', color: AppColors.violet)),
+                          Expanded(
+                              child: _Metric(
+                                  icon: Icons.quiz_outlined,
+                                  value: '${subject.quizCount}',
+                                  label: 'Quizzes',
+                                  color: AppColors.violet)),
                           const SizedBox(width: 8),
-                          Expanded(child: _Metric(icon: Icons.insights_outlined, value: '${score.round()}%', label: 'Average', color: AppColors.accent)),
+                          Expanded(
+                              child: _Metric(
+                                  icon: Icons.insights_outlined,
+                                  value: '${score.round()}%',
+                                  label: 'Average',
+                                  color: AppColors.accent)),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 9),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: LinearProgressIndicator(
                           value: score / 100,
                           minHeight: 5,
-                          color: score >= 60 ? AppColors.accent : AppColors.warning,
-                          backgroundColor: (isDark ? Colors.white : AppColors.primary).withValues(alpha: 0.09),
+                          color: score >= 60
+                              ? AppColors.accent
+                              : AppColors.warning,
+                          backgroundColor:
+                              (isDark ? Colors.white : AppColors.primary)
+                                  .withValues(alpha: 0.09),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 9),
                       Row(
                         children: [
                           VisibilityBadge(visibility: subject.visibility),
@@ -173,7 +209,9 @@ class SubjectCard extends StatelessWidget {
                           ],
                           if (subject.isArchived) ...[
                             const SizedBox(width: 7),
-                            const _StatusBadge(icon: Icons.archive_outlined, label: 'Archived'),
+                            const _StatusBadge(
+                                icon: Icons.archive_outlined,
+                                label: 'Archived'),
                           ],
                           if (isOwn && subject.copiedByCount > 0) ...[
                             const SizedBox(width: 7),
@@ -188,17 +226,24 @@ class SubjectCard extends StatelessWidget {
                               tooltip: 'Copy to My Subjects',
                               visualDensity: VisualDensity.compact,
                               onPressed: onCopy,
-                              icon: const Icon(Icons.copy_all_outlined, size: 17),
+                              icon:
+                                  const Icon(Icons.copy_all_outlined, size: 17),
                             ),
-                          if (!isOwn && subject.allowCopy && onCopy != null) const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_rounded, size: 18, color: accent),
+                          if (!isOwn && subject.allowCopy && onCopy != null)
+                            const SizedBox(width: 4),
+                          Icon(Icons.arrow_forward_rounded,
+                              size: 18, color: accent),
                         ],
                       ),
-                      if (subject.originalCreatorName != null || (!isOwn && subject.ownerName != null)) ...[
-                        const SizedBox(height: 11),
+                      if (subject.originalCreatorName != null ||
+                          (!isOwn && subject.ownerName != null)) ...[
+                        const SizedBox(height: 8),
                         Row(
                           children: [
-                            AvatarWidget(name: subject.originalCreatorName ?? subject.ownerName!, radius: 10),
+                            AvatarWidget(
+                                name: subject.originalCreatorName ??
+                                    subject.ownerName!,
+                                radius: 10),
                             const SizedBox(width: 7),
                             Expanded(
                               child: Text(
@@ -207,7 +252,8 @@ class SubjectCard extends StatelessWidget {
                                     : 'Shared by ${subject.ownerName}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.textMuted),
                               ),
                             ),
                           ],
@@ -231,14 +277,20 @@ class _Metric extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _Metric({required this.icon, required this.value, required this.label, required this.color});
+  const _Metric(
+      {required this.icon,
+      required this.value,
+      required this.label,
+      required this.color});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
           Row(
@@ -246,11 +298,17 @@ class _Metric extends StatelessWidget {
             children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: 4),
-              Text(value, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800, color: color)),
+              Text(value,
+                  style: theme.textTheme.labelLarge
+                      ?.copyWith(fontWeight: FontWeight.w800, color: color)),
             ],
           ),
           const SizedBox(height: 2),
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.labelSmall?.copyWith(color: AppColors.textMuted, fontSize: 10)),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: AppColors.textMuted, fontSize: 10)),
         ],
       ),
     );
@@ -261,7 +319,8 @@ class _CopyBadge extends StatelessWidget {
   const _CopyBadge();
 
   @override
-  Widget build(BuildContext context) => const _StatusBadge(icon: Icons.copy_all_outlined, label: 'Copy allowed');
+  Widget build(BuildContext context) =>
+      const _StatusBadge(icon: Icons.copy_all_outlined, label: 'Copy allowed');
 }
 
 class _StatusBadge extends StatelessWidget {
@@ -273,11 +332,17 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 12, color: AppColors.primary),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primary)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary)),
         ]),
       );
 }
@@ -289,7 +354,12 @@ class _SubjectMenu extends StatelessWidget {
   final VoidCallback? onChangeVisibility;
   final VoidCallback? onArchive;
 
-  const _SubjectMenu({required this.subject, this.onEdit, this.onDelete, this.onChangeVisibility, this.onArchive});
+  const _SubjectMenu(
+      {required this.subject,
+      this.onEdit,
+      this.onDelete,
+      this.onChangeVisibility,
+      this.onArchive});
 
   @override
   Widget build(BuildContext context) => PopupMenuButton<String>(
@@ -303,10 +373,26 @@ class _SubjectMenu extends StatelessWidget {
           if (value == 'delete') onDelete?.call();
         },
         itemBuilder: (_) => [
-          const PopupMenuItem(value: 'edit', child: _MenuItem(icon: Icons.edit_outlined, label: 'Edit')),
-          const PopupMenuItem(value: 'visibility', child: _MenuItem(icon: Icons.lock_outline, label: 'Change visibility')),
-          PopupMenuItem(value: 'archive', child: _MenuItem(icon: subject.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, label: subject.isArchived ? 'Restore' : 'Archive')),
-          const PopupMenuItem(value: 'delete', child: _MenuItem(icon: Icons.delete_outline, label: 'Delete', color: AppColors.error)),
+          const PopupMenuItem(
+              value: 'edit',
+              child: _MenuItem(icon: Icons.edit_outlined, label: 'Edit')),
+          const PopupMenuItem(
+              value: 'visibility',
+              child: _MenuItem(
+                  icon: Icons.lock_outline, label: 'Change visibility')),
+          PopupMenuItem(
+              value: 'archive',
+              child: _MenuItem(
+                  icon: subject.isArchived
+                      ? Icons.unarchive_outlined
+                      : Icons.archive_outlined,
+                  label: subject.isArchived ? 'Restore' : 'Archive')),
+          const PopupMenuItem(
+              value: 'delete',
+              child: _MenuItem(
+                  icon: Icons.delete_outline,
+                  label: 'Delete',
+                  color: AppColors.error)),
         ],
       );
 }

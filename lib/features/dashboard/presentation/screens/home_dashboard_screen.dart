@@ -12,6 +12,8 @@ import '../../../../shared/widgets/shimmer_loading.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/providers/notification_provider.dart';
 import '../providers/dashboard_provider.dart';
+import '../providers/performance_provider.dart';
+import '../widgets/home_performance_overview.dart';
 
 class HomeDashboardScreen extends ConsumerWidget {
   const HomeDashboardScreen({super.key});
@@ -19,6 +21,7 @@ class HomeDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(dashboardProvider);
+    final performance = ref.watch(performanceProvider);
     final user = ref.watch(authProvider).user;
     final notifications = ref.watch(notificationProvider).notifications;
     final unreadCount =
@@ -30,7 +33,10 @@ class HomeDashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: () => ref.read(dashboardProvider.notifier).load(),
+        onRefresh: () => Future.wait([
+          ref.read(dashboardProvider.notifier).load(),
+          ref.read(performanceProvider.notifier).load(),
+        ]),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -108,6 +114,57 @@ class HomeDashboardScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (performance.isLoading && performance.report == null)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.pageGutter,
+                      26,
+                      AppSpacing.pageGutter,
+                      0,
+                    ),
+                    child: LinearProgressIndicator(minHeight: 2),
+                  ),
+                )
+              else if (performance.error != null && performance.report == null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.pageGutter,
+                      26,
+                      AppSpacing.pageGutter,
+                      0,
+                    ),
+                    child: _PerformancePreviewError(
+                      message: performance.error!,
+                      onRetry: () =>
+                          ref.read(performanceProvider.notifier).load(),
+                    ),
+                  ),
+                )
+              else if (performance.report != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.pageGutter,
+                      26,
+                      AppSpacing.pageGutter,
+                      0,
+                    ),
+                    child: HomePerformanceOverview(
+                      report: performance.report!,
+                      onViewAll: () => context.push('/dashboard'),
+                      onOpenSubject: (subject) =>
+                          context.push('/subjects/${subject.id}'),
+                      onOpenTopic: (topic) {
+                        if (topic.subjectId == null) return;
+                        context.push(
+                          '/subjects/${topic.subjectId}/topics/${topic.id}',
+                        );
+                      },
+                    ),
+                  ),
+                ),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -287,6 +344,45 @@ class HomeDashboardScreen extends ConsumerWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PerformancePreviewError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _PerformancePreviewError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: .07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.error.withValues(alpha: .16)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.insights_rounded, color: AppColors.error, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: SelectableText(
+              'Performance insights unavailable: $message',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Retry performance insights',
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
     );
   }
