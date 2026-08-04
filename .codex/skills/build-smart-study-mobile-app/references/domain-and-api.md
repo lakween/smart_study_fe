@@ -49,7 +49,7 @@ Enums serialize using existing `name` or label behavior. Check each model before
 - `quizProvider`: entity cache plus paginated management/discovery list, create/edit/delete, server practice sessions, attempt submission/results, and entity lookup.
 - `examProvider`: mine/invited loading, create/detail/cancel, invitation response, attempt start/resume, answer autosave, idempotent submit, results, and entity lookup.
 - `friendProvider`: accepted friends, separate received/sent requests, paginated people discovery/search, and send/accept/decline/cancel/remove actions.
-- `notificationProvider`: paginated history, live insert, mark one/all read, dismiss.
+- `notificationProvider`: paginated history, Socket.IO live insert, FCM foreground refresh, mark one/all read, dismiss, and authenticated push lifecycle.
 - `dashboardProvider`: home statistics, revision queue, recent activity, last subject/topic.
 - `performanceProvider`: typed period-filtered `PerformanceReport` with summary/comparison, score trend, real daily activity and streaks, memory stages and revision queue, subject/topic rankings, recommendations, insights, and completion-dated exam history.
 
@@ -65,16 +65,18 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 
 ## Real-time contract
 
-- The target FastAPI ASGI application must host `python-socketio` on the same origin and preserve the existing Socket.IO protocol. The legacy `src/server.ts` remains parity evidence until this is implemented.
+- The FastAPI ASGI application hosts `python-socketio` on the same origin and preserves the existing Socket.IO protocol. The legacy Express `src/server.ts` is historical read-only parity evidence.
 - The client sends `{ token: <JWT> }` in handshake auth.
 - REST and Socket middleware verify both the JWT and that its user still exists before allowing protected work; valid sockets join `user:<userId>`.
-- Backend notification creation goes through `createNotification`, which persists first and emits `notification:new` to the recipient room.
+- Backend notification creation persists and commits first, then `emit_notification` sends `notification:new` to the recipient room and makes a best-effort FCM delivery to every registered device.
 - Friendship mutations emit `friendship:changed` to both affected rooms; the client refreshes accepted/request/discovery state with a debounce.
 - Exam invitation, submission, cancellation, auto-submission, and completion changes emit `exam:changed`; the client silently refreshes exam state.
-- Current emitters: friend request/acceptance, exam invitation, quiz completion, and AI quiz generation.
+- Current emitters include friend request/acceptance, exam invitations and lifecycle/submission events, quiz completion, AI quiz generation, and revision reminders.
 - Flutter `SocketClient` forces WebSocket transport, derives its proxy path from `API_BASE_URL`, reconnects automatically, and is disposed on sign-out.
 - REST `GET /notifications` remains the durable source for initial history and manual refresh.
-- This is foreground in-app delivery, not closed-app push notification delivery.
+- Authenticated Android/iOS clients upsert `{ token, platform }` with `POST /notifications/devices`; `DELETE /notifications/devices` unregisters the current token before sign-out. Tokens are unique across users and invalid FCM registrations are deleted after rejection.
+- `PushNotificationService` initializes Firebase from the native platform files, handles token refresh and session invalidation, suppresses duplicate foreground OS banners, and defers terminated-app tap routing until authentication. Push data carries `notificationId`, `type`, and optional `relatedId`; the notification inbox remains authoritative.
+- Firebase Admin is opt-in through `PUSH_NOTIFICATIONS_ENABLED`. Configure `FIREBASE_PROJECT_ID` plus either one-line `FIREBASE_SERVICE_ACCOUNT_JSON` (priority), a `GOOGLE_APPLICATION_CREDENTIALS` path, or Application Default Credentials. Credential secrets never belong in Git.
 
 ## Spaced-repetition contract
 
@@ -115,7 +117,9 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 ## Settings and exam ownership
 
 - Dark mode is persisted locally with `SharedPreferences` and restored before app startup.
-- Font size, notification preference switches, default visibility, terms, and privacy controls remain incomplete/placeholders.
+- `GET/PATCH /users/me/notification-preferences` persists `examRemindersEnabled`, `examReminderHoursBefore` (1-168), `revisionRemindersEnabled`, and `revisionReminderDaysBefore` (0-30). The UI presents hour/day labels, never scheduler seconds.
+- Exam reminders are sent once per user+exam+scheduled start time to the organizer and accepted invitees. Revision reminders are claimed once per stored revision date; disabling a category prevents future reminder creation without changing spaced-repetition calculation.
+- Font size, default visibility, terms, and privacy controls remain incomplete/placeholders.
 - Classify exams as owned when their ID is returned by `tab=mine` or a successful local creation; fall back to `organizerId` only as additional evidence.
 
 ## Contract checklist

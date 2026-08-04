@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/notifications/push_notification_service.dart';
 import '../providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -26,6 +27,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
     if (isAuth) {
       context.go('/home/dashboard');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        PushNotificationService.instance.openPendingNotification();
+      });
     } else {
       context.go('/login');
     }
@@ -47,29 +51,36 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 borderRadius: BorderRadius.circular(28),
               ),
               child: const Icon(Icons.school, size: 56, color: Colors.white),
-            )
-            .animate()
-            .fadeIn(duration: 600.ms)
-            .scale(begin: const Offset(0.5, 0.5), end: const Offset(1, 1), duration: 600.ms, curve: Curves.elasticOut),
+            ).animate().fadeIn(duration: 600.ms).scale(
+                begin: const Offset(0.5, 0.5),
+                end: const Offset(1, 1),
+                duration: 600.ms,
+                curve: Curves.elasticOut),
             const SizedBox(height: 24),
             const Text(
               'Smart Study',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
+              style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1),
             )
-            .animate().fadeIn(delay: 400.ms, duration: 600.ms).slideY(begin: 0.3, end: 0),
+                .animate()
+                .fadeIn(delay: 400.ms, duration: 600.ms)
+                .slideY(begin: 0.3, end: 0),
             const SizedBox(height: 8),
             const Text(
               'Learn Smarter, Not Harder',
-              style: TextStyle(fontSize: 15, color: Colors.white70, letterSpacing: 0.5),
-            )
-            .animate().fadeIn(delay: 700.ms, duration: 600.ms),
+              style: TextStyle(
+                  fontSize: 15, color: Colors.white70, letterSpacing: 0.5),
+            ).animate().fadeIn(delay: 700.ms, duration: 600.ms),
             const SizedBox(height: 80),
             const SizedBox(
               width: 28,
               height: 28,
-              child: CircularProgressIndicator(color: Colors.white70, strokeWidth: 2.5),
-            )
-            .animate().fadeIn(delay: 1000.ms),
+              child: CircularProgressIndicator(
+                  color: Colors.white70, strokeWidth: 2.5),
+            ).animate().fadeIn(delay: 1000.ms),
           ],
         ),
       ),

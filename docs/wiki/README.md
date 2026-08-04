@@ -10,6 +10,7 @@ This wiki describes the Flutter frontend and the production FastAPI backend in t
 - [Data model](data-model.md): Prisma entities, relationships, enums, cascade behavior, and Dart DTO mapping.
 - [Development guide](development-guide.md): how to add features safely, local and Android release setup, testing, known gaps, and priorities.
 - [FastAPI migration](fastapi-migration.md): compatibility rules, implementation record, production cutover, commands, and operational guarantees.
+- [Push notifications](push-notifications.md): Firebase mobile files, APNs setup, backend credentials, token lifecycle, and verification.
 
 ## System at a glance
 
@@ -24,6 +25,7 @@ Flutter UI
 Backend notification service
   -> persist notification
   -> Socket.IO event to authenticated user room
+  -> FCM push to registered Android/iOS devices
   -> Riverpod merges the event into visible app state
 
 Uploads -> FastAPI multipart/signature validation -> private uploads -> authenticated document file route

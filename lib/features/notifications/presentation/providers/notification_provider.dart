@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/socket_client.dart';
+import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../shared/models/notification_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../friends/presentation/providers/friend_provider.dart';
@@ -56,17 +57,23 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> start() async {
     if (_isStarted) return;
     _isStarted = true;
-    await SocketClient.instance.connect(
-      onNotification: _receiveNotification,
-      onFriendshipChanged: _onFriendshipChanged,
-      onExamChanged: _onExamChanged,
-    );
+    await Future.wait([
+      SocketClient.instance.connect(
+        onNotification: _receiveNotification,
+        onFriendshipChanged: _onFriendshipChanged,
+        onExamChanged: _onExamChanged,
+      ),
+      PushNotificationService.instance.startForAuthenticatedUser(
+        onForegroundNotification: refresh,
+      ),
+    ]);
     await load();
   }
 
   void stop() {
     _isStarted = false;
     SocketClient.instance.disconnect();
+    PushNotificationService.instance.suspend();
     state = const NotificationState();
   }
 
@@ -156,6 +163,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   @override
   void dispose() {
     SocketClient.instance.disconnect();
+    PushNotificationService.instance.suspend();
     super.dispose();
   }
 

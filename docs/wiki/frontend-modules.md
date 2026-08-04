@@ -102,7 +102,7 @@ Provider: `notificationProvider`. Model: `NotificationModel`.
 - `NotificationsScreen`: all/unread filtering, pull-to-refresh, mark one/all read, and swipe dismissal.
 - Dashboard consumes the same provider for its unread badge.
 
-The provider performs one REST history load, then maintains an authenticated Socket.IO connection and merges `notification:new` events by ID. This is not OS push and does not operate while the app is closed.
+The provider performs one REST history load, then maintains an authenticated Socket.IO connection and merges `notification:new` events by ID. Authenticated Android/iOS devices also register their FCM token with the backend. FCM provides background/terminated system notifications, while foreground delivery refreshes the durable inbox without displaying a duplicate system banner. Notification taps deep-link after authentication.
 
 ## Profile
 
@@ -113,7 +113,7 @@ Profile state is owned by `authProvider`; there is no separate profile provider.
 
 ## Settings
 
-- `SettingsScreen`: password/email changes, account deletion, dark mode, font-size UI, notification toggles, default visibility UI, legal placeholders, and sign-out.
+- `SettingsScreen`: password/email changes, account deletion, dark mode, font-size UI, backend-persisted exam reminders with hour-based lead time, backend-persisted revision reminders with day-based lead time, default visibility UI, legal placeholders, and sign-out. Worker polling seconds are intentionally not exposed.
 - `themeProvider`: persists dark mode using `SharedPreferences` and restores it before app rendering.
 
 Only dark mode is persisted and applied. Font size is in-memory and not applied globally. Notification switches and default visibility are local/placeholders. Terms and privacy actions are empty.

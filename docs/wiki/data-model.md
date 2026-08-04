@@ -32,7 +32,7 @@ User
 
 ## Entities
 
-- `User`: authentication/profile fields, hashed expiring password-reset data, refresh sessions, ownership, attempts, and participation relations.
+- `User`: authentication/profile fields, hashed expiring password-reset data, refresh sessions, ownership, attempts, participation relations, and persisted exam/revision reminder enablement plus hour/day lead times.
 - `RefreshToken`: hashed rotating session token with expiry, revocation, replacement, and user relation.
 - `Friendship`: directional requester/addressee pair with a unique directional constraint; application logic prevents reverse duplicates.
 - `Subject`: owner-controlled container with visibility/copy flags plus `originalCreatorId`, `originalCreatorName`, and `copiedFromId` provenance for deep copies. A copied subject is private and non-copyable by default.
@@ -52,6 +52,8 @@ User
 - `ExamAttempt`: one server-timed attempt per exam+user with stable question order and score summary.
 - `ExamAnswer`: autosaved selected option for one attempt+exam question.
 - `Notification`: user-owned message, type, read state, optional related entity ID.
+- `PushDeviceToken`: unique Android/iOS FCM registration token owned by one user. Login and token refresh upsert it, sign-out removes it, user deletion cascades it, and Firebase rejection cleans stale rows.
+- `ExamReminderDelivery`: one claim per exam+user+scheduled start time. It prevents duplicate durable/FCM reminders and cascades when the exam or user is deleted.
 
 ## Cascade behavior
 

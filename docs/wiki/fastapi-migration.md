@@ -15,6 +15,7 @@ readiness testing, and the Express PM2 runtime was removed.
 - PostgreSQL using the existing Prisma-created schema and data.
 - PyJWT and bcrypt-compatible password hashes.
 - `python-socketio` for the existing Socket.IO client protocol.
+- Firebase Admin for authenticated Android/iOS background and terminated push delivery.
 - Pytest/HTTPX for contract and integration tests.
 - Ruff for formatting and linting.
 
@@ -76,7 +77,9 @@ Implemented in FastAPI:
   password/email changes, account deletion, and visibility-filtered social profiles.
 - Friends: accepted/search/request lists and send, accept, decline, cancel, and
   remove mutations with durable friend notifications.
-- Notifications: paginated history, mark one/all read, and dismiss.
+- Notifications: paginated history, mark one/all read, dismiss, authenticated FCM
+  device-token register/unregister, unique token ownership, best-effort post-commit
+  delivery, and stale-token cleanup.
 - Socket.IO: JWT-authenticated connections, per-user rooms, and live notification,
   friendship, and exam event emitters. Friend mutations publish live friendship
   changes and friend notifications after commit; quiz completion publishes its
@@ -101,8 +104,10 @@ Implemented in FastAPI:
   exams, persist notifications, and publish post-commit live events safely
   across multiple workers.
 - Revision reminder scheduler: PostgreSQL-locked due-review scans atomically
-  claim each stored revision date, persist one reminder, and emit it after
-  commit without duplicating delivery across workers.
+  apply each user's enabled/day-based lead preference, atomically claim each stored
+  revision date, persist one reminder, and emit it after commit without duplicating
+  delivery across workers. The exam lifecycle scan similarly claims one reminder
+  per user+exam+scheduled start using the user's hour-based lead preference.
 - Rate limiting: per-client `/auth` and `/ai-quiz` request windows preserve the
   Express limits, headers, error response, trusted-proxy option, and scope isolation.
 - Database integration foundation: a guarded `_test`-only PostgreSQL preparation
@@ -162,8 +167,9 @@ Implemented in FastAPI:
   systemd restart, and public database readiness all passed.
 
 Remaining product operations are not migration blockers: configure a newly rotated
-AI-provider key, add production password-reset email delivery, and replace Android
-debug signing before store distribution.
+AI-provider key, finish production Firebase/APNs secret configuration, add production
+password-reset email delivery, and replace Android debug signing before store
+distribution.
 
 ## Local commands
 

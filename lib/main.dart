@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/app_constants.dart';
 import 'core/network/api_client.dart';
+import 'core/notifications/push_notification_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/settings/presentation/providers/theme_provider.dart';
@@ -14,6 +15,7 @@ Future<void> main() async {
   final preferences = await SharedPreferences.getInstance();
   final savedDarkMode = preferences.getBool(AppConstants.darkModeKey) ?? false;
   ApiClient().initialize();
+  await PushNotificationService.instance.initialize();
   runApp(
     ProviderScope(
       overrides: [

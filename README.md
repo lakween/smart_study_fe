@@ -6,7 +6,8 @@ taking exams with friends, tracking performance, and scheduling revision with
 spaced repetition.
 
 The application uses Riverpod for state, GoRouter for navigation, Dio for the
-REST API, Socket.IO for real-time in-app notifications, secure storage for
+REST API, Socket.IO for real-time in-app notifications, Firebase Cloud
+Messaging for background/terminated mobile push delivery, secure storage for
 authentication, and Material 3 light/dark themes.
 
 The personal Subjects area contains only the signed-in user's subjects. Topic
@@ -16,9 +17,11 @@ may configure an optional 1-180 minute limit; learners choose timed or untimed
 practice before each attempt.
 
 Dark-mode selection is stored on the device and restored before the first app
-screen is rendered. Notifications are delivered through an authenticated
-Socket.IO connection while the app is open; they are in-app events, not Android
-or iOS push notifications, so a closed app will not receive them.
+screen is rendered. Notifications are persisted by the backend, delivered live
+through authenticated Socket.IO while the app is open, and delivered through
+FCM while Android/iOS is backgrounded or terminated. See
+[`docs/wiki/push-notifications.md`](docs/wiki/push-notifications.md) for the
+required Firebase configuration files and production service-account setup.
 
 Authentication uses short-lived JWT access tokens plus rotating refresh
 sessions stored in secure storage. Quiz practice is started on the server;

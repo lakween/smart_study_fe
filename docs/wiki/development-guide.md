@@ -16,6 +16,12 @@ Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, and `PUBLIC_BASE_URL` in `.env`
 The replacement service uses the existing PostgreSQL schema. Do not run schema
 changes from both Prisma and a future Python migration tool.
 
+For FCM, set `PUSH_NOTIFICATIONS_ENABLED=true`, `FIREBASE_PROJECT_ID`, and the
+complete service-account object as one single-quoted line in
+`FIREBASE_SERVICE_ACCOUNT_JSON`. Preserve private-key newlines as `\n`. A protected
+credential file selected by `GOOGLE_APPLICATION_CREDENTIALS` remains an optional
+fallback; never configure both by committing either secret.
+
 Create the repeatable large development dataset when testing discovery and scrolling from the FastAPI backend:
 
 ```powershell
@@ -38,6 +44,12 @@ flutter run --dart-define=API_BASE_URL=http://YOUR_COMPUTER_IP:4000
 ```
 
 `PUBLIC_BASE_URL` must use the same reachable host or uploaded images/files will point at localhost.
+
+Android Firebase configuration belongs at `android/app/google-services.json` and
+must target `com.example.my_app`. iOS configuration belongs at
+`ios/Runner/GoogleService-Info.plist` and must target `com.example.myApp`; add it to
+the Runner target, enable Push Notifications and remote-notification background
+mode, and configure the APNs key. Rebuild/reinstall after native Firebase changes.
 
 ## Android release build
 
@@ -129,8 +141,8 @@ High priority:
 Functional gaps:
 
 - Password reset has hashed expiring tokens but no production email delivery.
-- Settings font size, notification toggles, default visibility, terms, and privacy are not fully implemented.
-- Notifications use authenticated foreground Socket.IO events, not OS push; closed apps receive nothing.
+- Settings font size, default visibility, terms, and privacy are not fully implemented. Exam/revision reminder preferences are persisted and scheduler-backed.
+- OS push is implemented for authenticated Android/iOS devices, but the Settings notification preference switches still do not control token registration or server delivery.
 - Document viewing depends on external URL/open behavior; offline caching is absent.
 - Home's small summary statistics still use a map; performance analytics are typed. Documents and long activity histories still need incremental/aggregate query optimization.
 

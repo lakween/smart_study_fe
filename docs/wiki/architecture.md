@@ -8,21 +8,23 @@
 - Dio for REST and multipart requests.
 - `flutter_secure_storage` for access and rotating refresh tokens.
 - `shared_preferences` for the persisted dark-mode choice.
+- Firebase Core/Messaging for Android/iOS push-token lifecycle and notification-tap routing.
 - Equatable immutable domain models with manual JSON parsing.
 
-`main.dart` initializes Flutter, reads the saved theme, initializes the API singleton, overrides the theme provider, and starts `MaterialApp.router`.
+`main.dart` initializes Flutter, reads the saved theme, initializes the API singleton and native Firebase configuration, overrides the theme provider, and starts `MaterialApp.router`.
 
 ## Backend stack
 
 - Python, FastAPI, Uvicorn, Pydantic 2, async SQLAlchemy/Psycopg 3, PostgreSQL.
 - The existing Prisma-created schema and data are reused; the legacy Express runtime has been removed after cutover.
 - `python-socketio` runs on the same ASGI origin for authenticated foreground events.
+- Firebase Admin sends best-effort FCM pushes to registered Android/iOS devices after notification transactions commit.
 - JWT bearer authentication; passwords use bcrypt.
 - FastAPI multipart handlers validate upload size, extension, and magic bytes. Documents use authenticated delivery; avatars use a separate explicit public route.
 - Environment-selected OpenAI/Gemini quiz generation is implemented; production requires a rotated provider key in the shared `.env`.
 - Central JSON errors use `{ "error": "message" }`.
 
-Required backend variables are `DATABASE_URL` and `JWT_SECRET`. Production should use an explicit `CORS_ORIGIN` before serving browser clients and a high-entropy JWT secret. Session/reset lifetime is controlled by `JWT_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_DAYS`, and `PASSWORD_RESET_TTL_MINUTES`.
+Required backend variables are `DATABASE_URL` and `JWT_SECRET`. Production should use an explicit `CORS_ORIGIN` before serving browser clients and a high-entropy JWT secret. Session/reset lifetime is controlled by `JWT_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES_DAYS`, and `PASSWORD_RESET_TTL_MINUTES`. Mobile push additionally uses `PUSH_NOTIFICATIONS_ENABLED`, `FIREBASE_PROJECT_ID`, and either `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS`.
 
 ## Navigation
 
@@ -55,7 +57,7 @@ There is no global GoRouter redirect. Splash performs the token check and naviga
 
 Feature notifiers generally load in their constructors. Screens watch state and render loading, error, empty, or content UI. Create/update/delete calls modify local collections after a successful API response.
 
-Topic state is a merged per-subject cache. Quiz state separates its entity cache from the active paginated management/discovery list. Friend and notification state paginate independently and refresh from authenticated Socket.IO events. Performance state owns a typed `PerformanceReport`; Home deep-links to its memory section while all calculations remain backend-owned.
+Topic state is a merged per-subject cache. Quiz state separates its entity cache from the active paginated management/discovery list. Friend and notification state paginate independently and refresh from authenticated Socket.IO events. Notification state also registers the authenticated mobile FCM token; foreground push refreshes REST and background/terminated taps deep-link after authentication. Performance state owns a typed `PerformanceReport`; Home deep-links to its memory section while all calculations remain backend-owned.
 
 The visual system uses Manrope typography, warm light neutrals and ink-navy
 dark surfaces, luminous indigo/violet and mint gradients, 16px controls,
@@ -82,9 +84,11 @@ Dio reads `auth_token` before each request. On an authenticated `401`, one share
 
 The socket client uses the same backend origin and derives its path from the API URL. It sends the access JWT in the handshake and reconnects automatically. An expired socket JWT first rotates the refresh session and reconnects with the new access token; invalid sessions trigger sign-out. Authenticated rooms receive `notification:new`, `friendship:changed`, and `exam:changed` events.
 
+The push client uses `android/app/google-services.json` for package `com.example.my_app` and `ios/Runner/GoogleService-Info.plist` for bundle `com.example.myApp`. Login/register and token refresh call `POST /notifications/devices`; sign-out calls `DELETE /notifications/devices` before deleting the local token. PostgreSQL history is authoritative, Socket.IO handles foreground immediacy, and FCM covers background/terminated delivery.
+
 ## Production deployment
 
-FastAPI production is live at `https://chatbot.kadaima.com/smart-study`. Nginx proxies to loopback port `4000`; the web and scheduler run as `smart-study-fastapi.service` and `smart-study-scheduler.service`. Releases are immutable under `/opt/smart-study-backend/releases`, while `.env` and uploads are shared. Backend `main` pushes run the installed GitHub Actions validation/deploy workflow; activation runs checksum migrations and `/health/ready`, then atomically updates `/opt/smart-study-backend/current`. The former Express PM2 process and port `4001` are removed.
+FastAPI production is live at `https://chatbot.kadaima.com/smart-study`. Nginx proxies to loopback port `4000`; the web and scheduler run as `smart-study-fastapi.service` and `smart-study-scheduler.service`. Releases are immutable under `/opt/smart-study-backend/releases`, while `.env` and uploads are shared. The preferred Firebase credential is complete one-line JSON in `FIREBASE_SERVICE_ACCOUNT_JSON`, wrapped in single quotes with private-key newlines preserved as `\n`; inline JSON takes priority over the optional credential-file path. The shared `.env` must remain mode `600`. Backend `main` pushes run the installed GitHub Actions validation/deploy workflow; activation runs checksum migrations and `/health/ready`, then atomically updates `/opt/smart-study-backend/current`. The former Express PM2 process and port `4001` are removed.
 
 Flutter produces direct-install APKs under
 `build/app/outputs/flutter-apk/` and Google Play bundles under

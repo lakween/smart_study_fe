@@ -35,6 +35,8 @@ successful password reset revokes all refresh sessions.
 - `GET /users/:id/avatar` and `GET /users/:id/cover`: explicit public profile-media delivery; document uploads remain authenticated.
 - `POST /users/me/change-password`: `currentPassword`, `newPassword`.
 - `POST /users/me/change-email`: `newEmail`, `password`.
+- `GET /users/me/notification-preferences`: returns persisted exam/revision reminder enablement and lead times.
+- `PATCH /users/me/notification-preferences`: optional `examRemindersEnabled`, `examReminderHoursBefore` (1-168 hours), `revisionRemindersEnabled`, and `revisionReminderDaysBefore` (0-30 days).
 - `DELETE /users/me`: cascades account-owned records.
 - `GET /users/:userId/profile`: user, friendship status, and visible subjects/quizzes.
 
@@ -108,6 +110,10 @@ The provider selected by `AI_PROVIDER` returns structured output with supporting
 
 Published individual questions are snapshots of the organizer's explicit owned-quiz selection. Collaborative papers snapshot every accepted participant's private contribution. Correct answers and explanations stay server-side during an attempt. Individual results release after submission; friend-exam results release after the common close time. A 30-second lifecycle scan starts scheduled exams, auto-submits overdue saved answers, expires invitations, closes exams, and creates durable notifications. The compatibility `POST /exams/:id/start` route only creates/resumes a secure attempt for older clients.
 
+The same lifecycle worker sends one upcoming-exam reminder per user, exam, and
+scheduled start time. Each user's hour-based lead time is applied without changing
+the worker's 30-second operational scan cadence.
+
 ## Friends (`smart_study_backend/app/routers/friends.py`)
 
 - `GET /friends?q=&page=&limit=`: paginated accepted friends.
@@ -127,10 +133,12 @@ create durable notifications. Duplicate relationships return 409.
 
 - `GET /notifications?page=&limit=`: newest-first paginated history.
 - `POST /notifications/read-all`.
+- `POST /notifications/devices`: authenticated `{ token, platform: "android"|"ios" }` upsert.
+- `DELETE /notifications/devices`: authenticated `{ token }` unregister for the current user.
 - `POST /notifications/:id/read`.
 - `DELETE /notifications/:id`.
 
-The HTTP server also hosts Socket.IO. A JWT supplied in the socket handshake authenticates the connection, which joins `user:<userId>`. Private-room events are `notification:new`, `friendship:changed`, and `exam:changed`.
+The HTTP server also hosts Socket.IO. A JWT supplied in the socket handshake authenticates the connection, which joins `user:<userId>`. Private-room events are `notification:new`, `friendship:changed`, and `exam:changed`. After a durable notification commits, the backend also sends a best-effort Firebase push to all registered devices; delivery failure cannot roll back the source action, and rejected stale tokens are removed. Firebase Admin accepts one-line `FIREBASE_SERVICE_ACCOUNT_JSON` first, then a `GOOGLE_APPLICATION_CREDENTIALS` path, then Application Default Credentials.
 
 ## Dashboard (`smart_study_backend/app/routers/dashboard.py`)
 

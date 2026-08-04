@@ -7,6 +7,7 @@
 - GoRouter with a root navigator and a shell navigator for the five-tab authenticated area.
 - Dio singleton for REST calls; `flutter_secure_storage` stores the bearer token.
 - Socket.IO client for authenticated foreground events. `AppConstants` derives the socket origin and path from `API_BASE_URL`; production resolves to origin `https://chatbot.kadaima.com` and path `/smart-study/socket.io`.
+- Firebase Core/Messaging for authenticated Android/iOS device registration, background and terminated delivery, token rotation, and notification-tap deep links. PostgreSQL/REST remains the durable notification source.
 - `AppEnvironment` gives an explicit `API_BASE_URL` highest priority, defaults release builds to `https://chatbot.kadaima.com/smart-study`, and keeps loopback/emulator URLs for debug development only.
 - Android release networking depends on `android.permission.INTERNET` in the main manifest. The debug/profile manifests alone do not grant it to a release APK.
 - Shared preferences restore dark mode before the application renders.
@@ -21,6 +22,7 @@ lib/
   core/
     constants/                      URLs, storage keys, limits, copy
     network/                        Dio client, Socket.IO client, error translation
+    notifications/                  Firebase lifecycle, token sync, and tap routing
     router/app_router.dart          all GoRouter routes
     theme/                          light/dark Material 3 theme and colors
     utils/                          validation and formatting helpers
@@ -34,7 +36,7 @@ lib/
 
 Features: auth, dashboard, subjects, topics, documents, quizzes, ai_quiz, exams, friends, profile, notifications, and settings.
 
-The production backend is the sibling `../smart_study_backend/`: FastAPI/Uvicorn, Pydantic, async SQLAlchemy/Psycopg, the existing PostgreSQL schema, JWT authentication, validated uploads, AI providers, schedulers, and authenticated `python-socketio`. The legacy Express/TypeScript repository at `../backend` is historical read-only evidence; Express has been removed from production.
+The production backend is the sibling `../smart_study_backend/`: FastAPI/Uvicorn, Pydantic, async SQLAlchemy/Psycopg, the existing PostgreSQL schema, JWT authentication, validated uploads, AI providers, schedulers, authenticated `python-socketio`, and Firebase Admin FCM delivery. The legacy Express/TypeScript repository at `../backend` is historical read-only evidence; Express has been removed from production.
 
 ## Navigation map
 
@@ -51,12 +53,13 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 - State objects are immutable classes with defaults and `copyWith`.
 - Notifiers often load on construction; avoid duplicate network loads caused by additional screen lifecycle calls.
 - Providers retain lists and expose entity/filter selectors through `Provider.family`.
-- `notificationProvider` performs one REST history load and then consumes `notification:new` Socket.IO events. It starts/stops with authentication and merges notifications by ID and creation time; do not reintroduce periodic REST polling.
+- `notificationProvider` performs one REST history load, consumes `notification:new` Socket.IO events, and starts mobile FCM token registration with authentication. Foreground FCM refreshes REST without a duplicate banner; background/terminated taps route only after authentication. It merges notifications by ID and creation time; do not reintroduce periodic polling.
 - `ApiClient` emits a guarded session-expired event for authenticated `401` responses. `authProvider` clears authentication state and Socket.IO, while the app root redirects to login and shows the session message.
 - `examProvider` retains sanitized exam summaries plus active attempts/results, and an `ownedExamIds` set populated from the `mine` endpoint and successful creation responses. The Exams shell tab derives dashboard totals, search/status filters, organizer invitation/submission progress, and released performance metrics from this cache. Attempt screens use the server clock/deadline and provider-owned autosave/submission calls.
 - `subjectProvider` owns only the authenticated user's subjects. Nested topic/quiz creation carries parent IDs through navigation instead of asking users to select context again.
 - Quiz attempts begin with a timed/untimed mode choice. The configured 1-180 minute countdown is optional and starts only after the learner chooses timed practice.
 - `darkModeProvider` persists the user's choice and is overridden at startup with the saved value.
+- Settings loads and persists notification preferences through `/users/me/notification-preferences`: exam lead time is an hour-based choice and revision lead time is a day-based choice. Backend worker polling remains infrastructure-owned in seconds.
 - Screens render loading, error, empty, and content states and offer retry or pull-to-refresh when appropriate.
 - Forms own `TextEditingController`, selection, and validation state locally, then delegate mutations to a notifier.
 - `ExamQuestionLibraryPicker` is shared by individual exam paper selection and the primary friend-contribution screen. It separates selected quiz groups from the available library while retaining search, collapsible subject/topic/quiz filters, whole-quiz actions, per-question actions, and an optional maximum selection. Friend quiz selections submit directly at the exact quota; existing private questions appear as one selected group. `Write new` opens the secondary collapsible manual editor and can prefill a partial quiz selection.
@@ -81,6 +84,6 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 
 ## Deployment shape
 
-FastAPI is deployed at `https://chatbot.kadaima.com/smart-study`. Nginx terminates TLS and proxies REST plus `/smart-study/socket.io` to `127.0.0.1:4000`. Immutable releases live under `/opt/smart-study-backend/releases`, with `current`, shared `.env`/uploads, checksum migrations, readiness checks, rollback, a restricted `deploy` account, and separate systemd web/scheduler services. The installed GitHub Actions workflow validates Python 3.12, formatting, lint, compilation, production entry-point imports, and tests before SSH upload/activation on every successful `main` push. Never edit `current` directly or bypass a failed workflow with an ad hoc production patch.
+FastAPI is deployed at `https://chatbot.kadaima.com/smart-study`. Nginx terminates TLS and proxies REST plus `/smart-study/socket.io` to `127.0.0.1:4000`. Immutable releases live under `/opt/smart-study-backend/releases`, with `current`, shared `.env`/uploads, checksum migrations, readiness checks, rollback, a restricted `deploy` account, and separate systemd web/scheduler services. Firebase Admin reads one-line `FIREBASE_SERVICE_ACCOUNT_JSON` from the protected shared `.env` (preferred), a `GOOGLE_APPLICATION_CREDENTIALS` file path, or ADC. The installed GitHub Actions workflow validates Python 3.12, formatting, lint, compilation, production entry-point imports, and tests before SSH upload/activation on every successful `main` push. Never edit `current` directly or bypass a failed workflow with an ad hoc production patch.
 
 The Flutter Android release is built from `my_app` with `flutter build apk --release` for direct installation or `flutter build appbundle --release` for Google Play. Rebuild after URL or manifest changes, inspect the generated APK rather than trusting an old artifact, and install it over the device copy. The current Gradle release block still uses the debug signing configuration, so replace it with a protected upload keystore before external production distribution.

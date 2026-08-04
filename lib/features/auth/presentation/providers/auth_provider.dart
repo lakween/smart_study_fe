@@ -7,6 +7,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/socket_client.dart';
+import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../shared/models/user_model.dart';
 
 class AuthState {
@@ -48,6 +49,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier() : super(const AuthState()) {
     _sessionExpiredSubscription = ApiClient().sessionExpiredEvents.listen((_) {
       SocketClient.instance.disconnect();
+      PushNotificationService.instance.invalidateLocalToken();
       state = const AuthState(
         error: 'Your session is no longer valid. Please sign in again.',
         sessionExpired: true,
@@ -184,6 +186,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
+    await PushNotificationService.instance.unregisterCurrentDevice();
     await ApiClient().revokeSession();
     await ApiClient().clearToken();
     SocketClient.instance.disconnect();
