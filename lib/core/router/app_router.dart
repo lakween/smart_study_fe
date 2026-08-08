@@ -34,6 +34,8 @@ import '../../features/profile/presentation/screens/my_profile_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/messages/presentation/screens/chat_screen.dart';
+import '../../features/messages/presentation/screens/conversations_screen.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -177,6 +179,13 @@ final appRouter = GoRouter(
         GoRoute(
             path: '/friends/find',
             builder: (_, __) => const FindFriendsScreen()),
+        GoRoute(
+            path: '/messages', builder: (_, __) => const ConversationsScreen()),
+        GoRoute(
+          path: '/messages/:friendId',
+          builder: (_, state) =>
+              ChatScreen(friendId: state.pathParameters['friendId']!),
+        ),
         GoRoute(
           path: '/users/:userId/profile',
           builder: (_, state) =>

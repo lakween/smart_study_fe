@@ -26,6 +26,12 @@ void main() {
     ),
     (location: '/exams/exam-1', route: '/exams/:examId', tab: 2),
     (location: '/friends/find', route: '/friends/find', tab: 3),
+    (location: '/messages', route: '/messages', tab: 3),
+    (
+      location: '/messages/user-1',
+      route: '/messages/:friendId',
+      tab: 3,
+    ),
     (
       location: '/users/user-1/profile',
       route: '/users/:userId/profile',

@@ -186,11 +186,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
-    await PushNotificationService.instance.unregisterCurrentDevice();
-    await ApiClient().revokeSession();
-    await ApiClient().clearToken();
+    // Stop foreground events immediately, but keep the access token just long
+    // enough to unregister this physical device and revoke the refresh session.
     SocketClient.instance.disconnect();
-    state = const AuthState();
+    try {
+      await PushNotificationService.instance.unregisterCurrentDevice();
+      await ApiClient().revokeSession();
+    } finally {
+      try {
+        await ApiClient().clearToken();
+      } finally {
+        state = const AuthState();
+      }
+    }
   }
 
   @override

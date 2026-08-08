@@ -3,7 +3,7 @@
 Smart Study is a Flutter learning application for organizing subjects and
 topics, uploading study material, creating manual or AI-assisted quizzes,
 taking exams with friends, tracking performance, and scheduling revision with
-spaced repetition.
+spaced repetition. Accepted friends can also exchange text-only direct messages.
 
 The application uses Riverpod for state, GoRouter for navigation, Dio for the
 REST API, Socket.IO for real-time in-app notifications, Firebase Cloud
@@ -32,6 +32,9 @@ restart. Answer keys are returned to non-owners only after submission.
 Quiz, friend, and notification lists load incrementally. Subjects support
 search, sorting, visibility filters, and archive/restore. Friendship changes
 arrive live through Socket.IO in addition to durable notification history.
+Direct-message history is stored in PostgreSQL, delivered live to the recipient
+through `message:new`, and sent as an FCM deep link while the app is backgrounded
+or terminated. Attachments and group chats are intentionally not part of this MVP.
 
 Friend exams use a blind collaborative lobby: the organizer participates,
 every accepted friend contributes the same user-entered positive number of

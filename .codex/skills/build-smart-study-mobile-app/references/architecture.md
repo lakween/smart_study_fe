@@ -34,7 +34,7 @@ lib/
     widgets/                        reusable design-system components
 ```
 
-Features: auth, dashboard, subjects, topics, documents, quizzes, ai_quiz, exams, friends, profile, notifications, and settings.
+Features: auth, dashboard, subjects, topics, documents, quizzes, ai_quiz, exams, friends, messages, profile, notifications, and settings.
 
 The production backend is the sibling `../smart_study_backend/`: FastAPI/Uvicorn, Pydantic, async SQLAlchemy/Psycopg, the existing PostgreSQL schema, JWT authentication, validated uploads, AI providers, schedulers, authenticated `python-socketio`, and Firebase Admin FCM delivery. The legacy Express/TypeScript repository at `../backend` is historical read-only evidence; Express has been removed from production.
 
@@ -44,7 +44,7 @@ Authentication: `/splash`, `/login`, `/register`, `/forgot-password`.
 
 Shell tabs: `/home/dashboard`, `/home/subjects`, `/home/exams`, `/home/friends`, `/home/profile`.
 
-Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/detail/question-library/private-contribution/attempt/result; friend requests, friend discovery, and user profile; notifications, settings, and profile edit. My Performance uses `/dashboard` and `/dashboard?section=memory`, but both routes remain inside the authenticated shell so the bottom dock stays visible with Home selected. Exam detail/result views are also shell-owned with Exams selected; create, question-building, contribution, and attempt routes remain focused full-screen flows without the dock.
+Drill-down routes include subject create/detail/edit; subject-scoped topic create/detail and topic edit; quiz list/create/edit/attempt/result; document upload/view; AI quiz; exam create/detail/question-library/private-contribution/attempt/result; friend requests, friend discovery, and user profile; `/messages` conversation summaries and `/messages/:friendId` chat; notifications, settings, and profile edit. My Performance uses `/dashboard` and `/dashboard?section=memory`, but both routes remain inside the authenticated shell so the bottom dock stays visible with Home selected. Exam detail/result views are shell-owned with Exams selected, while both message routes are shell-owned with Friends selected. Exam creation, question-building, contribution, and attempt routes remain focused full-screen flows without the dock.
 
 Keep route parameter names aligned with screen constructor requirements. Add specific static routes before overlapping parameterized routes when route matching could be ambiguous.
 
@@ -54,6 +54,7 @@ Keep route parameter names aligned with screen constructor requirements. Add spe
 - Notifiers often load on construction; avoid duplicate network loads caused by additional screen lifecycle calls.
 - Providers retain lists and expose entity/filter selectors through `Provider.family`.
 - `notificationProvider` performs one REST history load, consumes `notification:new` Socket.IO events, and starts mobile FCM token registration with authentication. Foreground FCM refreshes REST without a duplicate banner; background/terminated taps route only after authentication. It merges notifications by ID and creation time; do not reintroduce periodic polling.
+- `messageProvider` owns paginated conversation summaries and per-friend text history. It consumes recipient-only `message:new` events, marks the open conversation read, refreshes from foreground message pushes when necessary, and is invalidated with every authenticated account change.
 - `ApiClient` emits a guarded session-expired event for authenticated `401` responses. `authProvider` clears authentication state and Socket.IO, while the app root redirects to login and shows the session message.
 - `examProvider` retains sanitized exam summaries plus active attempts/results, and an `ownedExamIds` set populated from the `mine` endpoint and successful creation responses. The Exams shell tab derives dashboard totals, search/status filters, organizer invitation/submission progress, and released performance metrics from this cache. Attempt screens use the server clock/deadline and provider-owned autosave/submission calls.
 - `subjectProvider` owns only the authenticated user's subjects. Nested topic/quiz creation carries parent IDs through navigation instead of asking users to select context again.

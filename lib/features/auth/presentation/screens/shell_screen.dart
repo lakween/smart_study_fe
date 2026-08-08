@@ -23,7 +23,9 @@ class ShellScreen extends StatelessWidget {
       return 1;
     }
     if (location.startsWith('/exams/')) return 2;
-    if (location.startsWith('/friends/') || location.startsWith('/users/')) {
+    if (location.startsWith('/friends/') ||
+        location.startsWith('/users/') ||
+        location.startsWith('/messages')) {
       return 3;
     }
     if (location.startsWith('/settings')) return 4;

@@ -1,6 +1,6 @@
 ---
 name: build-smart-study-mobile-app
-description: Build, extend, debug, review, migrate, deploy, or test the Smart Study Flutter application and its FastAPI/PostgreSQL backend. Use for Dart, Flutter, Python, FastAPI, SQLAlchemy, Pydantic, REST, Socket.IO, Firebase Cloud Messaging, Riverpod, GoRouter, Dio, authentication, subjects, topics, documents, quizzes, spaced repetition, AI quiz generation, exams, friends, profiles, real-time notifications, dashboards, settings, theming, deployment, or Android/iOS/web/desktop behavior in Smart Study.
+description: Build, extend, debug, review, migrate, deploy, or test the Smart Study Flutter application and its FastAPI/PostgreSQL backend. Use for Dart, Flutter, Python, FastAPI, SQLAlchemy, Pydantic, REST, Socket.IO, Firebase Cloud Messaging, Riverpod, GoRouter, Dio, authentication, subjects, topics, documents, quizzes, spaced repetition, AI quiz generation, exams, friends, direct messaging, chat, profiles, push or real-time notifications, dashboards, settings, theming, deployment, or Android/iOS/web/desktop behavior in Smart Study.
 ---
 
 # Build Smart Study Mobile App
@@ -46,6 +46,7 @@ description: Build, extend, debug, review, migrate, deploy, or test the Smart St
 - Keep practice timing server-authoritative through `QuizSession`; submit `sessionId`, never client elapsed seconds. Hide solutions from non-owners until submission and preserve resumable local answer drafts.
 - Preserve rotating refresh-session behavior in `ApiClient`: serialize refresh, rotate the secure refresh token, retry once, and revoke on sign-out/password reset.
 - Keep growing quiz, friend, subject, and notification collections paginated. Friendship mutations must emit `friendship:changed` to both user rooms.
+- Keep direct chat friend-only and text-only. PostgreSQL `direct_messages` is the authoritative history; paginate conversations and per-friend history, emit `message:new` only to the recipient room after commit, send best-effort FCM with `type=message` and `relatedId=<senderId>`, mark a conversation read on open, and clear all message state on account changes. Attachments, groups, and client-trusted friendship checks are out of scope unless explicitly requested.
 - Serve document uploads only through authenticated document authorization. Verify magic bytes, parent ownership/visibility, and delete the physical file only after its final reference is gone. Do not expose the raw uploads directory; give avatars a separate explicit delivery policy.
 - Quiz time limits are optional whole minutes from 1 to 180. Before an attempt, offer timed practice when a limit exists and always offer untimed practice; start timing only after mode selection.
 - Normalize user-authored subject, topic, quiz, question, option, and explanation text before PostgreSQL writes; remove NUL characters and validate the normalized value.

@@ -77,6 +77,8 @@ Implemented in FastAPI:
   password/email changes, account deletion, and visibility-filtered social profiles.
 - Friends: accepted/search/request lists and send, accept, decline, cancel, and
   remove mutations with durable friend notifications.
+- Messages: accepted-friend-only text conversations, paginated durable history,
+  read tracking, recipient-only `message:new` delivery, and FCM chat deep links.
 - Notifications: paginated history, mark one/all read, dismiss, authenticated FCM
   device-token register/unregister, unique token ownership, best-effort post-commit
   delivery, and stale-token cleanup.

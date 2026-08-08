@@ -5,6 +5,10 @@ app, while Firebase Cloud Messaging displays notifications when Android or iOS i
 backgrounded or terminated. The notification ID is shared across both transports,
 and the REST inbox remains authoritative.
 
+Direct-message pushes are the exception to the notification-inbox model: the
+authoritative record is the PostgreSQL `direct_messages` row and the chat REST
+history. A chat push does not add a duplicate item to the general notification inbox.
+
 ## Flutter configuration files
 
 The Firebase Android app must use package ID `com.example.my_app`. Place its file at:
@@ -66,6 +70,7 @@ the web and scheduler services is handled by the deployment workflow.
 - Sign-out unregisters the device and deletes its local FCM token.
 - Session expiry invalidates the local token; Firebase rejection cleans stale rows.
 - Foreground FCM refreshes the REST inbox while Socket.IO provides the immediate item.
+- Direct-message pushes use `type=message` and the sender ID as `relatedId`; foreground Socket.IO updates chat state and background/terminated taps open that friend conversation.
 - Background/terminated taps open exam detail, revision practice, friend requests,
   quizzes, or the notification inbox based on authenticated notification data.
 - Settings persists exam reminders as an hour-based lead time and revision reminders

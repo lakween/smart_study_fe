@@ -45,11 +45,14 @@ Drill-down routes:
 - AI: `/ai-quiz`
 - Exams: `/exams/create`, `/exams/:examId`, `/exams/:examId/contribute`, `/exams/:examId/attempt`, `/exams/:examId/result`
 - Social/profile: `/friends/requests`, `/friends/find`, `/users/:userId/profile`, `/profile/edit`
+- Messages: `/messages`, `/messages/:friendId`
 - Utility: `/notifications`, `/dashboard`, `/dashboard?section=memory`, `/settings`
 
 `/dashboard` and its memory deep link are children of the authenticated shell, even though they are not separate dock destinations. The performance view keeps the floating bottom dock visible and resolves to the Home item.
 
 Exam detail and result routes are also children of the shell and resolve to the Exams dock item. Exam creation, individual question building, friend contribution, and active attempts stay outside the shell to preserve a focused workflow.
+
+Conversation and chat routes are children of the shell and resolve to the Friends dock item. Open a conversation with `push` so system back returns to its owning Friends/messages flow instead of exiting the app.
 
 There is no global GoRouter redirect. Splash performs the token check and navigates to login or the dashboard.
 
@@ -57,7 +60,7 @@ There is no global GoRouter redirect. Splash performs the token check and naviga
 
 Feature notifiers generally load in their constructors. Screens watch state and render loading, error, empty, or content UI. Create/update/delete calls modify local collections after a successful API response.
 
-Topic state is a merged per-subject cache. Quiz state separates its entity cache from the active paginated management/discovery list. Friend and notification state paginate independently and refresh from authenticated Socket.IO events. Notification state also registers the authenticated mobile FCM token; foreground push refreshes REST and background/terminated taps deep-link after authentication. Performance state owns a typed `PerformanceReport`; Home deep-links to its memory section while all calculations remain backend-owned.
+Topic state is a merged per-subject cache. Quiz state separates its entity cache from the active paginated management/discovery list. Friend, message, and notification state paginate independently and refresh from authenticated Socket.IO events. Message history is PostgreSQL-authoritative, is restricted to accepted friends, and is cleared on account changes. Notification state also registers the authenticated mobile FCM token; foreground push refreshes the relevant REST state and background/terminated taps deep-link after authentication. Performance state owns a typed `PerformanceReport`; Home deep-links to its memory section while all calculations remain backend-owned.
 
 The visual system uses Manrope typography, warm light neutrals and ink-navy
 dark surfaces, luminous indigo/violet and mint gradients, 16px controls,
@@ -82,7 +85,7 @@ the development-only debug/profile manifests are not merged into a release.
 
 Dio reads `auth_token` before each request. On an authenticated `401`, one shared refresh operation rotates `refresh_token`, retries the original request once, and signs out only if rotation/retry fails. Logout and password reset revoke server-side refresh sessions. FastAPI's authentication dependency verifies the access JWT and confirms the user still exists.
 
-The socket client uses the same backend origin and derives its path from the API URL. It sends the access JWT in the handshake and reconnects automatically. An expired socket JWT first rotates the refresh session and reconnects with the new access token; invalid sessions trigger sign-out. Authenticated rooms receive `notification:new`, `friendship:changed`, and `exam:changed` events.
+The socket client uses the same backend origin and derives its path from the API URL. It sends the access JWT in the handshake and reconnects automatically. An expired socket JWT first rotates the refresh session and reconnects with the new access token; invalid sessions trigger sign-out. Authenticated rooms receive `notification:new`, `friendship:changed`, `exam:changed`, and recipient-only `message:new` events.
 
 The push client uses `android/app/google-services.json` for package `com.example.my_app` and `ios/Runner/GoogleService-Info.plist` for bundle `com.example.myApp`. Login/register and token refresh call `POST /notifications/devices`; sign-out calls `DELETE /notifications/devices` before deleting the local token. PostgreSQL history is authoritative, Socket.IO handles foreground immediacy, and FCM covers background/terminated delivery.
 

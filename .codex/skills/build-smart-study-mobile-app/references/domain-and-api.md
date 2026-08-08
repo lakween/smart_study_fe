@@ -6,6 +6,7 @@
 - [Core domains](#core-domains)
 - [Provider/API ownership](#providerapi-ownership)
 - [Subject deep-copy contract](#subject-deep-copy-contract)
+- [Direct-message contract](#direct-message-contract)
 - [Real-time contract](#real-time-contract)
 - [Spaced-repetition contract](#spaced-repetition-contract)
 - [Nested creation and quiz practice](#nested-creation-and-quiz-practice)
@@ -37,6 +38,7 @@ Auth endpoints include register, login, current user, forgot password, profile u
 - `ExamAttemptModel` / `ExamResultModel`: stable ordered attempt questions, autosaved answers, authoritative deadline, score, and conditionally released solutions.
 - `FriendModel`: friendship/request state around a user.
 - `NotificationModel`: typed notification, related entity, read state, timestamp.
+- `ChatMessage` / `ChatConversation`: friend-only text message history, last-message summary, read timestamp, and unread count.
 
 Enums serialize using existing `name` or label behavior. Check each model before changing wire values; for example question answers use uppercase labels while visibility generally uses enum names.
 
@@ -50,6 +52,7 @@ Enums serialize using existing `name` or label behavior. Check each model before
 - `examProvider`: mine/invited loading, create/detail/cancel, invitation response, attempt start/resume, answer autosave, idempotent submit, results, and entity lookup.
 - `friendProvider`: accepted friends, separate received/sent requests, paginated people discovery/search, and send/accept/decline/cancel/remove actions.
 - `notificationProvider`: paginated history, Socket.IO live insert, FCM foreground refresh, mark one/all read, dismiss, and authenticated push lifecycle.
+- `messageProvider`: paginated conversations/history, friend-scoped send/read mutations, `message:new` live inserts, unread counts, and message-push refresh/deep links.
 - `dashboardProvider`: home statistics, revision queue, recent activity, last subject/topic.
 - `performanceProvider`: typed period-filtered `PerformanceReport` with summary/comparison, score trend, real daily activity and streaks, memory stages and revision queue, subject/topic rankings, recommendations, insights, and completion-dated exam history.
 
@@ -63,6 +66,15 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 - Copy only nested topics, quizzes, and documents that are visible to the viewer and independently allow copying. A quiz is copied only with a copied parent topic; all of its questions are cloned. A topic-scoped document is skipped if that topic is not copied.
 - Copied documents reuse the protected stored file reference. Delete the physical file only after its final database reference is gone.
 
+## Direct-message contract
+
+- `GET /messages/conversations?page=&limit=` returns `{ conversations, page, limit, total, hasMore }`; each summary contains `friend`, `lastMessage`, and `unreadCount`.
+- `GET /messages/:friendId?page=&limit=` returns `{ friend, messages, page, limit, total, hasMore }`. Paginate older history and merge by message ID into ascending `createdAt` order in Flutter.
+- `POST /messages/:friendId` accepts `{ text }`, returns `{ message }` with HTTP 201, removes NUL characters and surrounding whitespace, rejects empty content, and limits normalized text to 2,000 characters.
+- `POST /messages/:friendId/read` returns `{ updated }` and marks only unread incoming messages from that friend.
+- Every endpoint authenticates the caller and verifies a current accepted friendship on the backend. Do not trust cached Flutter friendship state for authorization.
+- Keep `/messages` and `/messages/:friendId` inside the authenticated shell with Friends selected. Clear `messageProvider` whenever the authenticated user changes so conversations, unread counts, and Socket.IO data cannot cross accounts.
+
 ## Real-time contract
 
 - The FastAPI ASGI application hosts `python-socketio` on the same origin and preserves the existing Socket.IO protocol. The legacy Express `src/server.ts` is historical read-only parity evidence.
@@ -72,6 +84,7 @@ Prefer provider-owned API calls. A few specialized screens currently call Dio di
 - Friendship mutations emit `friendship:changed` to both affected rooms; the client refreshes accepted/request/discovery state with a debounce.
 - Exam invitation, submission, cancellation, auto-submission, and completion changes emit `exam:changed`; the client silently refreshes exam state.
 - Current emitters include friend request/acceptance, exam invitations and lifecycle/submission events, quiz completion, AI quiz generation, and revision reminders.
+- Direct messages commit to PostgreSQL before `message:new` is emitted to the recipient room and a best-effort FCM `type=message` push is sent. `relatedId` is the sender ID, so notification taps open `/messages/:friendId`. Only currently accepted friends may list history, send, or mark messages read.
 - Flutter `SocketClient` forces WebSocket transport, derives its proxy path from `API_BASE_URL`, reconnects automatically, and is disposed on sign-out.
 - REST `GET /notifications` remains the durable source for initial history and manual refresh.
 - Authenticated Android/iOS clients upsert `{ token, platform }` with `POST /notifications/devices`; `DELETE /notifications/devices` unregisters the current token before sign-out. Tokens are unique across users and invalid FCM registrations are deleted after rejection.

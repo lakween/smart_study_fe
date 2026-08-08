@@ -95,6 +95,15 @@ Provider: `friendProvider`. Model: `FriendModel`.
 
 Sending and accepting requests create database notifications and emit them to the recipient's authenticated Socket.IO room. Friend-list state itself is refreshed separately from notification state.
 
+## Messages
+
+Provider: `messageProvider`. Models: `ChatMessage`, `ChatConversation`.
+
+- `ConversationsScreen`: latest friend conversations, message previews, timestamps, unread badges, refresh, and friend navigation.
+- `ChatScreen`: paginated text-only history, compact own/friend bubbles, selectable text, read-on-open behavior, and a 2,000-character composer.
+
+`GET /messages/conversations` and `GET /messages/:friendId` are the durable source. `POST /messages/:friendId` sends only to a currently accepted friend, `POST /messages/:friendId/read` marks their incoming messages read, and `message:new` inserts foreground messages immediately. FCM message taps deep-link to the sender's chat when the app is backgrounded or terminated. Message state is invalidated on logout and every account change.
+
 ## Notifications
 
 Provider: `notificationProvider`. Model: `NotificationModel`.

@@ -451,6 +451,18 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                         _FriendButton(
                             status: _data!.friendStatus,
                             onTap: () => _onFriendTap(_data!.friendStatus)),
+                        if (_data!.friendStatus == FriendStatus.friends) ...[
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                context.push('/messages/${widget.userId}'),
+                            icon: const Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 18,
+                            ),
+                            label: const Text('Message'),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         Padding(
                           padding: AppSpacing.pageHorizontal,

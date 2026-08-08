@@ -28,6 +28,8 @@ Backend notification service
   -> FCM push to registered Android/iOS devices
   -> Riverpod merges the event into visible app state
 
+Friend chat -> durable direct message -> recipient Socket.IO event -> background FCM deep link
+
 Uploads -> FastAPI multipart/signature validation -> private uploads -> authenticated document file route
 AI quiz -> multipart upload -> PDF/image extraction -> selected OpenAI/Gemini provider -> editable questions -> quiz creation
 Performance -> completion-dated backend aggregates -> typed PerformanceReport -> charts, rankings, memory actions
@@ -66,6 +68,7 @@ The app is feature-first. A normal change should update the feature screen, prov
 | AI quiz | [AI quiz](../../lib/features/ai_quiz/) | [FastAPI AI quiz](../../../smart_study_backend/app/routers/ai_quiz.py) |
 | Exams | [exams](../../lib/features/exams/) | [FastAPI exams](../../../smart_study_backend/app/routers/exams.py) |
 | Friends | [friends](../../lib/features/friends/) | [FastAPI friends](../../../smart_study_backend/app/routers/friends.py) |
+| Messages | [messages](../../lib/features/messages/) | [FastAPI messages](../../../smart_study_backend/app/routers/messages.py) |
 | Notifications | [notifications](../../lib/features/notifications/) | [FastAPI notifications](../../../smart_study_backend/app/routers/notifications.py) |
 
 ## Current development rules

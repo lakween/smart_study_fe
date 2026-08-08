@@ -1,0 +1,4 @@
+interface:
+  display_name: "Smart Study Final Report"
+  short_description: "Draft evidence-based Smart Study thesis reports"
+  default_prompt: "Use $write-smart-study-final-report to draft or review my Smart Study final thesis report."

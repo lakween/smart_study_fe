@@ -12,11 +12,16 @@ void main() {
       '/exams/exam-1',
     );
     expect(pushRouteForData({'type': 'friend'}), '/friends/requests');
+    expect(
+      pushRouteForData({'type': 'message', 'relatedId': 'friend-1'}),
+      '/messages/friend-1',
+    );
     expect(pushRouteForData({'type': 'quiz'}), '/quizzes');
     expect(pushRouteForData({'type': 'general'}), '/notifications');
     expect(
       pushRouteForData({'type': 'exam', 'relatedId': ''}),
       '/notifications',
     );
+    expect(pushRouteForData({'type': 'message'}), '/notifications');
   });
 }

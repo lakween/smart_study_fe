@@ -52,6 +52,7 @@ User
 - `ExamAttempt`: one server-timed attempt per exam+user with stable question order and score summary.
 - `ExamAnswer`: autosaved selected option for one attempt+exam question.
 - `Notification`: user-owned message, type, read state, optional related entity ID.
+- `DirectMessage`: text-only sender/recipient record with creation and nullable read timestamps. Both user foreign keys cascade on deletion; service authorization requires a current accepted friendship for history, sending, and read updates.
 - `PushDeviceToken`: unique Android/iOS FCM registration token owned by one user. Login and token refresh upsert it, sign-out removes it, user deletion cascades it, and Firebase rejection cleans stale rows.
 - `ExamReminderDelivery`: one claim per exam+user+scheduled start time. It prevents duplicate durable/FCM reminders and cascades when the exam or user is deleted.
 

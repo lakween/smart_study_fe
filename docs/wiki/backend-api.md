@@ -129,6 +129,15 @@ Friend metadata and mutual counts are batch loaded. Every request/accept/decline
 cancel/remove emits `friendship:changed` to both users; send and accept also
 create durable notifications. Duplicate relationships return 409.
 
+## Messages (`smart_study_backend/app/routers/messages.py`)
+
+- `GET /messages/conversations?page=&limit=`: accepted-friend conversations ordered by latest message; returns `{ conversations, page, limit, total, hasMore }`, with `friend`, `lastMessage`, and `unreadCount` in each summary.
+- `GET /messages/:friendId?page=&limit=`: returns `{ friend, messages, page, limit, total, hasMore }`; Flutter merges older pages by message ID into chronological order.
+- `POST /messages/:friendId`: sends `{ text }` and returns `{ message }` with HTTP 201. Text is stripped of NUL characters and surrounding whitespace, must remain non-empty, and is limited to 2,000 normalized characters.
+- `POST /messages/:friendId/read`: marks every unread incoming message from that friend read and returns `{ updated }`.
+
+Every route verifies a current accepted friendship. A send transaction persists and commits before `message:new` is emitted only to the recipient's user room and a best-effort FCM `type=message` push is attempted. Message history remains authoritative even when Socket.IO or Firebase is unavailable.
+
 ## Notifications (`smart_study_backend/app/routers/notifications.py`)
 
 - `GET /notifications?page=&limit=`: newest-first paginated history.
@@ -138,7 +147,7 @@ create durable notifications. Duplicate relationships return 409.
 - `POST /notifications/:id/read`.
 - `DELETE /notifications/:id`.
 
-The HTTP server also hosts Socket.IO. A JWT supplied in the socket handshake authenticates the connection, which joins `user:<userId>`. Private-room events are `notification:new`, `friendship:changed`, and `exam:changed`. After a durable notification commits, the backend also sends a best-effort Firebase push to all registered devices; delivery failure cannot roll back the source action, and rejected stale tokens are removed. Firebase Admin accepts one-line `FIREBASE_SERVICE_ACCOUNT_JSON` first, then a `GOOGLE_APPLICATION_CREDENTIALS` path, then Application Default Credentials.
+The HTTP server also hosts Socket.IO. A JWT supplied in the socket handshake authenticates the connection, which joins `user:<userId>`. Private-room events are `notification:new`, `friendship:changed`, `exam:changed`, and `message:new`. After durable notification/message work commits, the backend also sends a best-effort Firebase push to all registered devices; delivery failure cannot roll back the source action, and rejected stale tokens are removed. Firebase Admin accepts one-line `FIREBASE_SERVICE_ACCOUNT_JSON` first, then a `GOOGLE_APPLICATION_CREDENTIALS` path, then Application Default Credentials.
 
 ## Dashboard (`smart_study_backend/app/routers/dashboard.py`)
 
